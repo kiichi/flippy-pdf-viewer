@@ -1,0 +1,394 @@
+:root {
+  --bg: #f3f4f6;
+  --panel: #ffffff;
+  --paper: #ffffff;
+  --ink: #111827;
+  --muted: #6b7280;
+  --accent: #111827;
+  --accent-strong: #000000;
+  --line: #d1d5db;
+  --shadow: rgba(17, 24, 39, 0.08);
+  --flip-duration: 900ms;
+  --perspective: 900px;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  min-height: 100vh;
+  font-family:
+    Inter,
+    ui-sans-serif,
+    system-ui,
+    -apple-system,
+    BlinkMacSystemFont,
+    "Segoe UI",
+    sans-serif;
+  color: var(--ink);
+  background: var(--bg);
+  letter-spacing: -0.01em;
+}
+
+button,
+input,
+select {
+  font: inherit;
+}
+
+.app {
+  width: min(1080px, calc(100vw - 32px));
+  margin: 0 auto;
+  padding: 14px 14px 72px;
+  border-radius: 0;
+  background: var(--panel);
+  border: 1px solid var(--line);
+  box-shadow: 0 10px 30px var(--shadow);
+  position: relative;
+  min-height: 280px;
+  overflow: hidden;
+}
+
+.book {
+  position: relative;
+  width: min(100%, 980px);
+  aspect-ratio: 16 / 9.7;
+  margin: 0 auto;
+  perspective: var(--perspective);
+}
+
+.spread {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+}
+
+.book.is-cover .spread {
+  grid-template-columns: 1fr;
+}
+
+.page,
+.flip-face {
+  position: relative;
+  overflow: hidden;
+  background: var(--paper);
+  border: 1px solid var(--line);
+  box-shadow: 0 2px 8px var(--shadow);
+}
+
+.page.can-turn {
+  cursor: pointer;
+}
+
+.page-left {
+  border-radius: 0;
+}
+
+.page-right {
+  border-radius: 0;
+}
+
+.book.is-cover .page-right {
+  width: 50%;
+  margin-left: auto;
+  margin-right: 0;
+  border-radius: 0;
+}
+
+.page::after,
+.flip-face::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: linear-gradient(
+    90deg,
+    rgba(17, 24, 39, 0.02),
+    transparent 12%,
+    transparent 88%,
+    rgba(17, 24, 39, 0.03)
+  );
+}
+
+.page.can-turn:hover::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  pointer-events: none;
+  background: linear-gradient(
+    90deg,
+    rgba(17, 24, 39, 0.04),
+    transparent 24%,
+    transparent 76%,
+    rgba(17, 24, 39, 0.04)
+  );
+}
+
+.page canvas,
+.flip-face canvas {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+
+.placeholder {
+  width: 100%;
+  height: 100%;
+  display: grid;
+  place-items: center;
+  padding: 24px;
+  text-align: center;
+  color: var(--muted);
+  font-size: 0.95rem;
+}
+
+.flip-sheet {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 50%;
+  z-index: 5;
+  transform-style: preserve-3d;
+  overflow: hidden;
+  backface-visibility: hidden;
+}
+
+.flip-sheet.hidden {
+  display: none;
+}
+
+.flip-sheet.next {
+  right: 0;
+  transform-origin: left center;
+}
+
+.flip-sheet.prev {
+  left: 0;
+  transform-origin: right center;
+}
+
+.flip-sheet.next.flipping {
+  animation: flip-next var(--flip-duration) cubic-bezier(0.45, 0.05, 0.2, 1) forwards;
+}
+
+.flip-sheet.prev.flipping {
+  animation: flip-prev var(--flip-duration) cubic-bezier(0.45, 0.05, 0.2, 1) forwards;
+}
+
+.flip-face {
+  position: absolute;
+  inset: 0;
+  backface-visibility: hidden;
+  transform: translateZ(0);
+}
+
+.flip-sheet.next .flip-face {
+  border-radius: 0;
+}
+
+.flip-sheet.prev .flip-face {
+  border-radius: 0;
+}
+
+.flip-back {
+  transform: rotateY(180deg);
+}
+
+.loading-panel {
+  position: absolute;
+  inset: 18px;
+  display: grid;
+  place-items: center;
+  gap: 12px;
+  background: rgba(255, 255, 255, 0.94);
+  border-radius: 0;
+}
+
+.loading-panel.hidden {
+  display: none;
+}
+
+.spinner {
+  width: 28px;
+  height: 28px;
+  border-radius: 999px;
+  border: 3px solid rgba(17, 24, 39, 0.12);
+  border-top-color: var(--accent);
+  animation: spin 0.9s linear infinite;
+}
+
+.controls {
+  position: static;
+  padding: 6px 8px;
+  margin-top: 12px;
+  z-index: 8;
+  transition: opacity 180ms ease, transform 180ms ease;
+  background: rgba(255, 255, 255, 0.94);
+  border: 1px solid var(--line);
+  box-shadow: 0 4px 18px rgba(17, 24, 39, 0.08);
+}
+
+.controls-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+#fullscreenButton {
+  white-space: nowrap;
+}
+
+button,
+select {
+  border: 1px solid #1f2937;
+  border-radius: 0;
+  background: #ffffff;
+  color: var(--accent);
+  padding: 5px 10px;
+  line-height: 1.1;
+  font-size: 0.88rem;
+}
+
+.controls button {
+  min-width: 34px;
+  min-height: 34px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  font-size: 0.95rem;
+}
+
+button:hover,
+select:hover {
+  background: #f9fafb;
+  cursor: pointer;
+}
+
+button:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+#spreadSlider {
+  flex: 1;
+  accent-color: #374151;
+}
+
+.status,
+.hint {
+  margin: 0;
+  color: var(--muted);
+  font-size: 0.8rem;
+  line-height: 1.05;
+  font-weight: 500;
+}
+
+.status {
+  margin-left: 2px;
+}
+
+.hint {
+  margin-left: auto;
+}
+
+.app:fullscreen {
+  width: 100vw;
+  height: 100vh;
+  max-width: none;
+  padding: 12px;
+  border-radius: 0;
+  border: 0;
+  background: #f3f4f6;
+  box-shadow: none;
+}
+
+.app:fullscreen .book {
+  width: min(100%, 1600px);
+  height: calc(100vh - 24px);
+  max-height: 100%;
+}
+
+.app:fullscreen .controls {
+  position: absolute;
+  left: 12px;
+  right: 12px;
+  bottom: 12px;
+  margin-top: 0;
+  opacity: 0;
+  transform: translateY(10px);
+  pointer-events: none;
+  box-shadow: 0 4px 18px rgba(17, 24, 39, 0.08);
+}
+
+.app:fullscreen.show-controls .controls,
+.app:fullscreen .controls:hover,
+.app:fullscreen .controls:focus-within {
+  opacity: 1;
+  transform: translateY(0);
+  pointer-events: auto;
+}
+
+@keyframes spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@keyframes flip-next {
+  from {
+    transform: rotateY(0deg);
+  }
+  50% {
+    transform: rotateY(-92deg);
+  }
+  to {
+    transform: rotateY(-180deg);
+  }
+}
+
+@keyframes flip-prev {
+  from {
+    transform: rotateY(0deg);
+  }
+  50% {
+    transform: rotateY(92deg);
+  }
+  to {
+    transform: rotateY(180deg);
+  }
+}
+
+@media (max-width: 860px) {
+  .app {
+    width: min(100vw - 16px, 1120px);
+    padding: 12px 12px 64px;
+  }
+
+  .book {
+    aspect-ratio: 1 / 1.28;
+  }
+
+  .controls-row {
+    flex-wrap: wrap;
+  }
+
+  .controls {
+    padding: 7px 8px;
+  }
+
+  .app:fullscreen .controls {
+    left: 8px;
+    right: 8px;
+    bottom: 8px;
+  }
+}

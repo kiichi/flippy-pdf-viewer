@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>PDF Flip Book</title>
+    <link rel="stylesheet" href="./styles.css" />
+  </head>
+  <body>
+    <main class="app" id="app">
+        <div class="book" id="book" aria-live="polite">
+          <div class="spread spread-base">
+            <div class="page page-left" id="leftPage"></div>
+            <div class="page page-right" id="rightPage"></div>
+          </div>
+
+          <div class="flip-sheet hidden" id="flipSheet" aria-hidden="true">
+            <div class="flip-face" id="flipFront"></div>
+            <div class="flip-face flip-back" id="flipBack"></div>
+          </div>
+        </div>
+
+        <div class="loading-panel" id="loadingPanel">
+          <div class="spinner"></div>
+          <p id="loadingText">Loading sample.pdf...</p>
+        </div>
+
+        <section class="controls" id="controls">
+          <div class="controls-row">
+            <button id="prevButton" type="button" aria-label="Previous page" title="Previous page">
+              <span aria-hidden="true">◀</span>
+            </button>
+            <input
+              id="spreadSlider"
+              type="range"
+              min="0"
+              max="0"
+              value="0"
+              step="1"
+              aria-label="Jump to spread"
+            />
+            <button id="nextButton" type="button" aria-label="Next page" title="Next page">
+              <span aria-hidden="true">▶</span>
+            </button>
+            <button id="fullscreenButton" type="button" aria-label="Toggle fullscreen" title="Toggle fullscreen">
+              <span id="fullscreenIcon" aria-hidden="true">⛶</span>
+            </button>
+            <p class="status" id="statusText">Loading...</p>
+            <p class="hint" id="hintText">
+              Use arrow keys or click the page sides.
+            </p>
+          </div>
+        </section>
+    </main>
+
+    <script src="https://cdn.jsdelivr.net/npm/pdfjs-dist@4.10.38/build/pdf.min.mjs" type="module"></script>
+    <script src="./app.js" type="module"></script>
+  </body>
+</html>
