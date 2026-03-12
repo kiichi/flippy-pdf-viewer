@@ -8,7 +8,7 @@
   --accent-strong: #000000;
   --line: #d1d5db;
   --shadow: rgba(17, 24, 39, 0.08);
-  --flip-duration: 900ms;
+  --flip-duration: 560ms;
   --perspective: 900px;
 }
 
@@ -40,15 +40,39 @@ select {
 
 .app {
   width: min(1080px, calc(100vw - 32px));
-  margin: 0 auto;
-  padding: 14px 14px 72px;
+  margin: 14px auto;
+  padding: 14px 10px;
   border-radius: 0;
   background: var(--panel);
   border: 1px solid var(--line);
   box-shadow: 0 10px 30px var(--shadow);
   position: relative;
-  min-height: 280px;
   overflow: hidden;
+}
+
+.drop-overlay {
+  position: absolute;
+  inset: 0;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  z-index: 12;
+  background: rgba(17, 24, 39, 0.08);
+  border: 2px dashed #6b7280;
+  pointer-events: none;
+}
+
+.app.is-dragging .drop-overlay {
+  display: flex;
+}
+
+.drop-card {
+  padding: 12px 16px;
+  background: rgba(255, 255, 255, 0.96);
+  border: 1px solid #9ca3af;
+  color: var(--ink);
+  font-size: 0.95rem;
+  box-shadow: 0 8px 24px rgba(17, 24, 39, 0.08);
 }
 
 .book {
@@ -106,10 +130,10 @@ select {
   pointer-events: none;
   background: linear-gradient(
     90deg,
-    rgba(17, 24, 39, 0.02),
-    transparent 12%,
-    transparent 88%,
-    rgba(17, 24, 39, 0.03)
+    rgba(17, 24, 39, 0.012),
+    transparent 10%,
+    transparent 90%,
+    rgba(17, 24, 39, 0.02)
   );
 }
 
@@ -154,8 +178,9 @@ select {
   width: 50%;
   z-index: 5;
   transform-style: preserve-3d;
-  overflow: hidden;
+  overflow: visible;
   backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
 }
 
 .flip-sheet.hidden {
@@ -173,18 +198,20 @@ select {
 }
 
 .flip-sheet.next.flipping {
-  animation: flip-next var(--flip-duration) cubic-bezier(0.45, 0.05, 0.2, 1) forwards;
+  animation: flip-next var(--flip-duration) linear forwards;
 }
 
 .flip-sheet.prev.flipping {
-  animation: flip-prev var(--flip-duration) cubic-bezier(0.45, 0.05, 0.2, 1) forwards;
+  animation: flip-prev var(--flip-duration) linear forwards;
 }
 
 .flip-face {
   position: absolute;
   inset: 0;
   backface-visibility: hidden;
-  transform: translateZ(0);
+  -webkit-backface-visibility: hidden;
+  transform: translateZ(0.1px);
+  transform-style: preserve-3d;
 }
 
 .flip-sheet.next .flip-face {
@@ -196,7 +223,7 @@ select {
 }
 
 .flip-back {
-  transform: rotateY(180deg);
+  transform: rotateY(180deg) translateZ(0.1px);
 }
 
 .loading-panel {
@@ -224,8 +251,11 @@ select {
 
 .controls {
   position: static;
+  width: min(100%, 980px);
   padding: 6px 8px;
-  margin-top: 12px;
+  margin-top: 8px;
+  margin-left: auto;
+  margin-right: auto;
   z-index: 8;
   transition: opacity 180ms ease, transform 180ms ease;
   background: rgba(255, 255, 255, 0.94);
@@ -238,10 +268,6 @@ select {
   align-items: center;
   gap: 8px;
   flex-wrap: wrap;
-}
-
-#fullscreenButton {
-  white-space: nowrap;
 }
 
 button,
@@ -281,8 +307,7 @@ button:disabled {
   accent-color: #374151;
 }
 
-.status,
-.hint {
+.status {
   margin: 0;
   color: var(--muted);
   font-size: 0.8rem;
@@ -292,10 +317,6 @@ button:disabled {
 
 .status {
   margin-left: 2px;
-}
-
-.hint {
-  margin-left: auto;
 }
 
 .app:fullscreen {
@@ -319,6 +340,7 @@ button:disabled {
   position: absolute;
   left: 12px;
   right: 12px;
+  width: auto;
   bottom: 12px;
   margin-top: 0;
   opacity: 0;
@@ -346,32 +368,33 @@ button:disabled {
 
 @keyframes flip-next {
   from {
-    transform: rotateY(0deg);
+    transform: rotateY(0deg) scaleX(1);
   }
   50% {
-    transform: rotateY(-92deg);
+    transform: rotateY(-90deg) scaleX(0.985);
   }
   to {
-    transform: rotateY(-180deg);
+    transform: rotateY(-180deg) scaleX(1);
   }
 }
 
 @keyframes flip-prev {
   from {
-    transform: rotateY(0deg);
+    transform: rotateY(0deg) scaleX(1);
   }
   50% {
-    transform: rotateY(92deg);
+    transform: rotateY(90deg) scaleX(0.985);
   }
   to {
-    transform: rotateY(180deg);
+    transform: rotateY(180deg) scaleX(1);
   }
 }
 
 @media (max-width: 860px) {
   .app {
     width: min(100vw - 16px, 1120px);
-    padding: 12px 12px 64px;
+    margin: 8px auto;
+    padding: 12px 8px;
   }
 
   .book {
@@ -390,5 +413,9 @@ button:disabled {
     left: 8px;
     right: 8px;
     bottom: 8px;
+  }
+
+  .app:fullscreen .controls {
+    display: block;
   }
 }

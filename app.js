@@ -7,14 +7,15 @@ const OPTIONS = {
   pdfPath: "./sample.pdf",
   renderScale: 1.35,
   keyboardNavigation: true,
-  blankLabel: "Blank page",
-  flipDuration: 900,
+  blankLabel: "",
+  flipDuration: 560,
   perspective: 900,
   controlsRevealZone: 140,
   controlsRevealDelay: 1200,
 };
 
 const app = document.getElementById("app");
+const dropOverlay = document.getElementById("dropOverlay");
 const book = document.getElementById("book");
 const leftPage = document.getElementById("leftPage");
 const rightPage = document.getElementById("rightPage");
@@ -23,11 +24,8 @@ const flipFront = document.getElementById("flipFront");
 const flipBack = document.getElementById("flipBack");
 const prevButton = document.getElementById("prevButton");
 const nextButton = document.getElementById("nextButton");
-const fullscreenButton = document.getElementById("fullscreenButton");
-const fullscreenIcon = document.getElementById("fullscreenIcon");
 const spreadSlider = document.getElementById("spreadSlider");
 const statusText = document.getElementById("statusText");
-const hintText = document.getElementById("hintText");
 const loadingPanel = document.getElementById("loadingPanel");
 const loadingText = document.getElementById("loadingText");
 
@@ -37,6 +35,8 @@ const state = {
   spreadCount: 1,
   busy: false,
   controlsHideTimer: 0,
+  dragDepth: 0,
+  sourceName: "sample.pdf",
 };
 
 book.style.setProperty("--flip-duration", `${OPTIONS.flipDuration}ms`);
@@ -53,44 +53,14 @@ bootstrap().catch((error) => {
 });
 
 async function bootstrap() {
-  disableControls(true);
-  loadingText.textContent = "Parsing sample.pdf...";
-
-  const documentTask = pdfjsLib.getDocument(OPTIONS.pdfPath);
-  const pdf = await documentTask.promise;
-  loadingText.textContent = `Rendering ${pdf.numPages} pages...`;
-
-  for (let pageNumber = 1; pageNumber <= pdf.numPages; pageNumber += 1) {
-    const pdfPage = await pdf.getPage(pageNumber);
-    const viewport = pdfPage.getViewport({ scale: OPTIONS.renderScale });
-    const canvas = document.createElement("canvas");
-    const context = canvas.getContext("2d");
-
-    canvas.width = Math.ceil(viewport.width);
-    canvas.height = Math.ceil(viewport.height);
-
-    await pdfPage.render({
-      canvasContext: context,
-      viewport,
-    }).promise;
-
-    state.pageCanvases.push(canvas);
-  }
-
-  state.spreadCount = Math.max(1, Math.ceil((state.pageCanvases.length + 1) / 2));
-  spreadSlider.max = String(state.spreadCount - 1);
-  spreadSlider.value = "0";
-
   bindEvents();
-  renderSpread(0);
-  disableControls(false);
-  loadingPanel.classList.add("hidden");
+  disableControls(true);
+  await loadPdfFromUrl(OPTIONS.pdfPath, state.sourceName);
 }
 
 function bindEvents() {
   prevButton.addEventListener("click", () => goTo(state.spreadIndex - 1));
   nextButton.addEventListener("click", () => goTo(state.spreadIndex + 1));
-  fullscreenButton.addEventListener("click", toggleFullscreen);
   leftPage.addEventListener("click", () => goTo(state.spreadIndex - 1));
   rightPage.addEventListener("click", () => goTo(state.spreadIndex + 1));
 
@@ -109,6 +79,11 @@ function bindEvents() {
 
   document.addEventListener("fullscreenchange", syncFullscreenLabel);
   document.addEventListener("mousemove", handleFullscreenPointer);
+
+  app.addEventListener("dragenter", handleDragEnter);
+  app.addEventListener("dragover", handleDragOver);
+  app.addEventListener("dragleave", handleDragLeave);
+  app.addEventListener("drop", handleDrop);
 }
 
 function goTo(targetSpread) {
@@ -130,6 +105,14 @@ function animateTurn(targetSpread, direction) {
 
   const current = getSpreadPages(state.spreadIndex);
   const target = getSpreadPages(targetSpread);
+
+  if (direction === "next") {
+    renderPage(leftPage, current.left);
+    renderPage(rightPage, target.right);
+  } else {
+    renderPage(leftPage, target.left);
+    renderPage(rightPage, current.right);
+  }
 
   flipSheet.className = `flip-sheet ${direction}`;
 
@@ -168,9 +151,6 @@ function renderSpread(spreadIndex) {
   leftPage.classList.toggle("can-turn", spreadIndex > 0);
   rightPage.classList.toggle("can-turn", spreadIndex < state.spreadCount - 1);
   statusText.textContent = `${spreadIndex + 1} / ${state.spreadCount}`;
-
-  const visiblePages = [spread.left, spread.right].filter(Boolean).join(" - ");
-  hintText.textContent = `sample.pdf • pages ${visiblePages || "blank"}`;
 }
 
 function getSpreadPages(spreadIndex) {
@@ -202,39 +182,131 @@ function renderPage(container, pageNumber) {
 function disableControls(disabled) {
   prevButton.disabled = disabled;
   nextButton.disabled = disabled;
-  fullscreenButton.disabled = disabled;
   spreadSlider.disabled = disabled;
+}
+
+async function loadPdfFromUrl(url, sourceName) {
+  const documentTask = pdfjsLib.getDocument(url);
+  await loadPdfDocument(documentTask, sourceName);
+}
+
+async function loadPdfFromFile(file) {
+  const buffer = await file.arrayBuffer();
+  const documentTask = pdfjsLib.getDocument({ data: buffer });
+  await loadPdfDocument(documentTask, file.name);
+}
+
+async function loadPdfDocument(documentTask, sourceName) {
+  disableControls(true);
+  loadingPanel.classList.remove("hidden");
+  loadingText.textContent = `Parsing ${sourceName}...`;
+  state.busy = true;
+  state.pageCanvases = [];
+  state.spreadIndex = 0;
+  state.sourceName = sourceName;
+  flipSheet.className = "flip-sheet hidden";
+
+  const pdf = await documentTask.promise;
+  loadingText.textContent = `Rendering ${pdf.numPages} pages...`;
+
+  for (let pageNumber = 1; pageNumber <= pdf.numPages; pageNumber += 1) {
+    const pdfPage = await pdf.getPage(pageNumber);
+    const viewport = pdfPage.getViewport({ scale: OPTIONS.renderScale });
+    const canvas = document.createElement("canvas");
+    const context = canvas.getContext("2d");
+
+    canvas.width = Math.ceil(viewport.width);
+    canvas.height = Math.ceil(viewport.height);
+
+    await pdfPage.render({
+      canvasContext: context,
+      viewport,
+    }).promise;
+
+    state.pageCanvases.push(canvas);
+  }
+
+  state.spreadCount = Math.max(1, Math.ceil((state.pageCanvases.length + 1) / 2));
+  spreadSlider.max = String(state.spreadCount - 1);
+  spreadSlider.value = "0";
+  renderSpread(0);
+  state.busy = false;
+  disableControls(false);
+  loadingPanel.classList.add("hidden");
+}
+
+function handleDragEnter(event) {
+  if (!hasPdf(event.dataTransfer)) {
+    return;
+  }
+  event.preventDefault();
+  state.dragDepth += 1;
+  app.classList.add("is-dragging");
+}
+
+function handleDragOver(event) {
+  if (!hasPdf(event.dataTransfer)) {
+    return;
+  }
+  event.preventDefault();
+  event.dataTransfer.dropEffect = "copy";
+}
+
+function handleDragLeave(event) {
+  if (!hasPdf(event.dataTransfer)) {
+    return;
+  }
+  event.preventDefault();
+  state.dragDepth = Math.max(0, state.dragDepth - 1);
+  if (state.dragDepth === 0) {
+    app.classList.remove("is-dragging");
+  }
+}
+
+async function handleDrop(event) {
+  if (!hasPdf(event.dataTransfer)) {
+    return;
+  }
+  event.preventDefault();
+  state.dragDepth = 0;
+  app.classList.remove("is-dragging");
+
+  const file = [...event.dataTransfer.files].find((item) =>
+    item.type === "application/pdf" || item.name.toLowerCase().endsWith(".pdf")
+  );
+  if (!file) {
+    return;
+  }
+
+  try {
+    await loadPdfFromFile(file);
+  } catch (error) {
+    console.error(error);
+    loadingPanel.classList.remove("hidden");
+    loadingText.textContent = `Could not load ${file.name}.`;
+  }
+}
+
+function hasPdf(dataTransfer) {
+  if (!dataTransfer) {
+    return false;
+  }
+
+  if ([...dataTransfer.items || []].some((item) => item.type === "application/pdf")) {
+    return true;
+  }
+
+  return [...dataTransfer.files || []].some((file) =>
+    file.type === "application/pdf" || file.name.toLowerCase().endsWith(".pdf")
+  );
 }
 
 function placeholder(label) {
   return `<div class="placeholder">${label}</div>`;
 }
 
-async function toggleFullscreen() {
-  try {
-    if (document.fullscreenElement) {
-      await document.exitFullscreen();
-      return;
-    }
-
-    await app.requestFullscreen();
-  } catch (error) {
-    console.error(error);
-    hintText.textContent = "Fullscreen is not available in this browser.";
-  }
-}
-
 function syncFullscreenLabel() {
   const isFullscreen = document.fullscreenElement === app;
-  fullscreenButton.setAttribute(
-    "aria-label",
-    isFullscreen ? "Exit fullscreen" : "Enter fullscreen"
-  );
-  fullscreenButton.setAttribute(
-    "title",
-    isFullscreen ? "Exit fullscreen" : "Enter fullscreen"
-  );
-  fullscreenIcon.textContent = isFullscreen ? "⤢" : "⛶";
 
   if (!isFullscreen) {
     app.classList.remove("show-controls");

@@ -8,6 +8,9 @@
   </head>
   <body>
     <main class="app" id="app">
+        <div class="drop-overlay" id="dropOverlay" aria-hidden="true">
+          <div class="drop-card">Drop PDF to open</div>
+        </div>
         <div class="book" id="book" aria-live="polite">
           <div class="spread spread-base">
             <div class="page page-left" id="leftPage"></div>
@@ -42,13 +45,7 @@
             <button id="nextButton" type="button" aria-label="Next page" title="Next page">
               <span aria-hidden="true">▶</span>
             </button>
-            <button id="fullscreenButton" type="button" aria-label="Toggle fullscreen" title="Toggle fullscreen">
-              <span id="fullscreenIcon" aria-hidden="true">⛶</span>
-            </button>
             <p class="status" id="statusText">Loading...</p>
-            <p class="hint" id="hintText">
-              Use arrow keys or click the page sides.
-            </p>
           </div>
         </section>
     </main>
