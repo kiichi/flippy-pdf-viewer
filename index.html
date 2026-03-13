@@ -32,18 +32,41 @@
           </button>
         </div>
 
+        <aside class="side-panel" id="sidePanel" aria-hidden="true">
+          <p class="side-panel-title">Flippy</p>
+          <div class="side-panel-header">
+            <p class="side-panel-label" id="sidePanelLabel">sample.pdf</p>
+            <button
+              id="sidePanelCloseButton"
+              class="side-panel-close"
+              type="button"
+              aria-label="Close panel"
+              title="Close panel"
+            >
+              <span aria-hidden="true">✕</span>
+            </button>
+          </div>
+          <p class="side-panel-file" id="fileNameText">sample.pdf</p>
+          <div class="side-panel-actions">
+            <button id="uploadButton" type="button">Upload PDF</button>
+            <a id="downloadLink" href="./sample.pdf" download="sample.pdf">Download PDF</a>
+            <a id="downloadAppLink" href="./flippy-webapp.zip" download="flippy-webapp.zip">
+              Download App ZIP
+            </a>
+          </div>
+        </aside>
+
         <section class="controls" id="controls">
           <div class="controls-row">
             <button
               id="controlsToggleButton"
               class="controls-toggle"
               type="button"
-              aria-label="Toggle controls"
-              title="Toggle controls"
+              aria-label="Open panel"
+              title="Open panel"
             >
               <span aria-hidden="true">☰</span>
             </button>
-            <p class="status" id="statusText">Loading...</p>
             <button id="prevButton" type="button" aria-label="Previous page" title="Previous page">
               <span aria-hidden="true">◀</span>
             </button>
@@ -59,10 +82,12 @@
             <button id="nextButton" type="button" aria-label="Next page" title="Next page">
               <span aria-hidden="true">▶</span>
             </button>
+            <p class="status" id="statusText">Loading...</p>
           </div>
         </section>
     </main>
 
+    <script src="https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/pdfjs-dist@4.10.38/build/pdf.min.mjs" type="module"></script>
     <script src="./app.js" type="module"></script>
   </body>

@@ -18,6 +18,13 @@ const app = document.getElementById("app");
 const fileInput = document.getElementById("fileInput");
 const dropOverlay = document.getElementById("dropOverlay");
 const book = document.getElementById("book");
+const sidePanel = document.getElementById("sidePanel");
+const sidePanelCloseButton = document.getElementById("sidePanelCloseButton");
+const sidePanelLabel = document.getElementById("sidePanelLabel");
+const fileNameText = document.getElementById("fileNameText");
+const uploadButton = document.getElementById("uploadButton");
+const downloadLink = document.getElementById("downloadLink");
+const downloadAppLink = document.getElementById("downloadAppLink");
 const leftPage = document.getElementById("leftPage");
 const rightPage = document.getElementById("rightPage");
 const flipSheet = document.getElementById("flipSheet");
@@ -40,6 +47,7 @@ const state = {
   controlsHideTimer: 0,
   dragDepth: 0,
   sourceName: "sample.pdf",
+  currentPdfBlob: null,
 };
 
 book.style.setProperty("--flip-duration", `${OPTIONS.flipDuration}ms`);
@@ -57,7 +65,10 @@ async function bootstrap() {
 }
 
 function bindEvents() {
-  controlsToggleButton.addEventListener("click", toggleControlsCollapsed);
+  controlsToggleButton.addEventListener("click", openSidePanel);
+  sidePanelCloseButton.addEventListener("click", closeSidePanel);
+  uploadButton.addEventListener("click", () => fileInput.click());
+  downloadAppLink.addEventListener("click", handleDownloadAppZip);
   prevButton.addEventListener("click", () => goTo(state.spreadIndex - 1));
   nextButton.addEventListener("click", () => goTo(state.spreadIndex + 1));
   leftPage.addEventListener("click", () => goTo(state.spreadIndex - 1));
@@ -85,6 +96,7 @@ function bindEvents() {
   app.addEventListener("drop", handleDrop);
   selectFileButton.addEventListener("click", () => fileInput.click());
   fileInput.addEventListener("change", handleFileSelect);
+  document.addEventListener("click", handleDocumentClick);
 }
 
 function goTo(targetSpread) {
@@ -188,12 +200,21 @@ function disableControls(disabled) {
 }
 
 async function loadPdfFromUrl(url, sourceName) {
+  const response = await fetch(url);
+  if (!response.ok) {
+    throw new Error(`Could not load ${sourceName}`);
+  }
+  state.currentPdfBlob = await response.blob();
   const documentTask = pdfjsLib.getDocument(url);
+  updateDownloadLink(url, sourceName);
   await loadPdfDocument(documentTask, sourceName);
 }
 
 async function loadPdfFromFile(file) {
   const buffer = await file.arrayBuffer();
+  const objectUrl = URL.createObjectURL(file);
+  state.currentPdfBlob = file;
+  updateDownloadLink(objectUrl, file.name);
   const documentTask = pdfjsLib.getDocument({ data: buffer });
   await loadPdfDocument(documentTask, file.name);
 }
@@ -207,6 +228,8 @@ async function loadPdfDocument(documentTask, sourceName) {
   state.pageCanvases = [];
   state.spreadIndex = 0;
   state.sourceName = sourceName;
+  sidePanelLabel.textContent = sourceName;
+  fileNameText.textContent = sourceName;
   flipSheet.className = "flip-sheet hidden";
 
   const pdf = await documentTask.promise;
@@ -362,18 +385,82 @@ function handleFullscreenPointer(event) {
   }, OPTIONS.controlsRevealDelay);
 }
 
-function toggleControlsCollapsed() {
-  if (window.innerWidth > 860 || document.fullscreenElement === app) {
+function openSidePanel() {
+  if (document.fullscreenElement === app) {
     return;
   }
 
-  const isCollapsed = app.classList.toggle("mobile-controls-collapsed");
-  controlsToggleButton.setAttribute(
-    "aria-label",
-    isCollapsed ? "Show controls" : "Hide controls"
-  );
-  controlsToggleButton.setAttribute(
-    "title",
-    isCollapsed ? "Show controls" : "Hide controls"
-  );
+  app.classList.add("side-panel-open");
+  sidePanel.setAttribute("aria-hidden", "false");
+}
+
+function closeSidePanel() {
+  app.classList.remove("side-panel-open");
+  sidePanel.setAttribute("aria-hidden", "true");
+}
+
+function updateDownloadLink(href, filename) {
+  downloadLink.href = href;
+  downloadLink.download = filename;
+  sidePanelLabel.textContent = filename;
+  fileNameText.textContent = filename;
+}
+
+function handleDocumentClick(event) {
+  if (!app.classList.contains("side-panel-open")) {
+    return;
+  }
+
+  if (sidePanel.contains(event.target) || controlsToggleButton.contains(event.target)) {
+    return;
+  }
+
+  closeSidePanel();
+}
+
+async function handleDownloadAppZip(event) {
+  event.preventDefault();
+
+  try {
+    downloadAppLink.textContent = "Preparing ZIP...";
+    downloadAppLink.setAttribute("aria-disabled", "true");
+
+    const zip = new window.JSZip();
+    const assets = ["README.md", "index.html", "app.js", "styles.css"];
+
+    const assetResults = await Promise.all(
+      assets.map(async (path) => {
+        const response = await fetch(path);
+        if (!response.ok) {
+          throw new Error(`Could not fetch ${path}`);
+        }
+        return { path, content: await response.text() };
+      })
+    );
+
+    for (const asset of assetResults) {
+      zip.file(asset.path, asset.content);
+    }
+
+    if (!state.currentPdfBlob) {
+      throw new Error("No PDF is currently loaded.");
+    }
+
+    zip.file(state.sourceName, state.currentPdfBlob);
+
+    const blob = await zip.generateAsync({ type: "blob" });
+    const objectUrl = URL.createObjectURL(blob);
+    const anchor = document.createElement("a");
+    anchor.href = objectUrl;
+    anchor.download = "flippy-webapp.zip";
+    document.body.appendChild(anchor);
+    anchor.click();
+    anchor.remove();
+    window.setTimeout(() => URL.revokeObjectURL(objectUrl), 1000);
+  } catch (error) {
+    console.error(error);
+  } finally {
+    downloadAppLink.textContent = "Download App ZIP";
+    downloadAppLink.removeAttribute("aria-disabled");
+  }
 }
