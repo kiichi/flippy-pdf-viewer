@@ -240,6 +240,16 @@ select {
   display: none;
 }
 
+.select-file-button.hidden {
+  display: none;
+}
+
+.select-file-button {
+  min-width: auto;
+  min-height: auto;
+  padding: 8px 12px;
+}
+
 .spinner {
   width: 28px;
   height: 28px;
@@ -268,6 +278,10 @@ select {
   align-items: center;
   gap: 8px;
   flex-wrap: wrap;
+}
+
+.controls-toggle {
+  display: none;
 }
 
 button,
@@ -313,10 +327,8 @@ button:disabled {
   font-size: 0.8rem;
   line-height: 1.05;
   font-weight: 500;
-}
-
-.status {
   margin-left: 2px;
+  min-width: 2.5rem;
 }
 
 .app:fullscreen {
@@ -398,7 +410,9 @@ button:disabled {
   }
 
   .book {
-    aspect-ratio: 1 / 1.28;
+    width: min(100%, calc((100svh - 150px) * (16 / 9.7)));
+    height: min(calc(100svh - 150px), calc((100vw - 16px) / (16 / 9.7)));
+    aspect-ratio: auto;
   }
 
   .controls-row {
@@ -407,6 +421,16 @@ button:disabled {
 
   .controls {
     padding: 7px 8px;
+  }
+
+  .controls-toggle {
+    display: inline-flex;
+  }
+
+  .app.mobile-controls-collapsed #prevButton,
+  .app.mobile-controls-collapsed #spreadSlider,
+  .app.mobile-controls-collapsed #nextButton {
+    display: none;
   }
 
   .app:fullscreen .controls {

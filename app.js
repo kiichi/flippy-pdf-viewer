@@ -15,6 +15,7 @@ const OPTIONS = {
 };
 
 const app = document.getElementById("app");
+const fileInput = document.getElementById("fileInput");
 const dropOverlay = document.getElementById("dropOverlay");
 const book = document.getElementById("book");
 const leftPage = document.getElementById("leftPage");
@@ -22,12 +23,14 @@ const rightPage = document.getElementById("rightPage");
 const flipSheet = document.getElementById("flipSheet");
 const flipFront = document.getElementById("flipFront");
 const flipBack = document.getElementById("flipBack");
+const controlsToggleButton = document.getElementById("controlsToggleButton");
 const prevButton = document.getElementById("prevButton");
 const nextButton = document.getElementById("nextButton");
 const spreadSlider = document.getElementById("spreadSlider");
 const statusText = document.getElementById("statusText");
 const loadingPanel = document.getElementById("loadingPanel");
 const loadingText = document.getElementById("loadingText");
+const selectFileButton = document.getElementById("selectFileButton");
 
 const state = {
   pageCanvases: [],
@@ -44,12 +47,7 @@ book.style.setProperty("--perspective", `${OPTIONS.perspective}px`);
 
 bootstrap().catch((error) => {
   console.error(error);
-  loadingText.textContent = "Could not load sample.pdf. Start this with Live Server.";
-  leftPage.innerHTML = placeholder("Failed to load PDF.");
-  rightPage.innerHTML = placeholder(error.message || "Unknown error.");
-  prevButton.disabled = true;
-  nextButton.disabled = true;
-  spreadSlider.disabled = true;
+  showFileFallback();
 });
 
 async function bootstrap() {
@@ -59,6 +57,7 @@ async function bootstrap() {
 }
 
 function bindEvents() {
+  controlsToggleButton.addEventListener("click", toggleControlsCollapsed);
   prevButton.addEventListener("click", () => goTo(state.spreadIndex - 1));
   nextButton.addEventListener("click", () => goTo(state.spreadIndex + 1));
   leftPage.addEventListener("click", () => goTo(state.spreadIndex - 1));
@@ -84,6 +83,8 @@ function bindEvents() {
   app.addEventListener("dragover", handleDragOver);
   app.addEventListener("dragleave", handleDragLeave);
   app.addEventListener("drop", handleDrop);
+  selectFileButton.addEventListener("click", () => fileInput.click());
+  fileInput.addEventListener("change", handleFileSelect);
 }
 
 function goTo(targetSpread) {
@@ -180,6 +181,7 @@ function renderPage(container, pageNumber) {
 }
 
 function disableControls(disabled) {
+  controlsToggleButton.disabled = disabled;
   prevButton.disabled = disabled;
   nextButton.disabled = disabled;
   spreadSlider.disabled = disabled;
@@ -199,6 +201,7 @@ async function loadPdfFromFile(file) {
 async function loadPdfDocument(documentTask, sourceName) {
   disableControls(true);
   loadingPanel.classList.remove("hidden");
+  selectFileButton.classList.add("hidden");
   loadingText.textContent = `Parsing ${sourceName}...`;
   state.busy = true;
   state.pageCanvases = [];
@@ -282,8 +285,23 @@ async function handleDrop(event) {
     await loadPdfFromFile(file);
   } catch (error) {
     console.error(error);
-    loadingPanel.classList.remove("hidden");
-    loadingText.textContent = `Could not load ${file.name}.`;
+    showFileFallback(`Could not load ${file.name}. Drop another PDF or choose a file.`);
+  }
+}
+
+async function handleFileSelect(event) {
+  const file = event.target.files?.[0];
+  if (!file) {
+    return;
+  }
+
+  try {
+    await loadPdfFromFile(file);
+  } catch (error) {
+    console.error(error);
+    showFileFallback(`Could not load ${file.name}. Drop another PDF or choose a file.`);
+  } finally {
+    fileInput.value = "";
   }
 }
 
@@ -303,6 +321,19 @@ function hasPdf(dataTransfer) {
 
 function placeholder(label) {
   return `<div class="placeholder">${label}</div>`;
+}
+
+function showFileFallback(message) {
+  state.busy = false;
+  disableControls(true);
+  loadingPanel.classList.remove("hidden");
+  selectFileButton.classList.remove("hidden");
+  loadingText.textContent =
+    message ||
+    "sample.pdf could not be loaded here. Drag and drop a PDF, or choose a file.";
+  leftPage.innerHTML = placeholder("Drop a PDF here");
+  rightPage.innerHTML = placeholder("Or click Choose PDF");
+  statusText.textContent = "0 / 0";
 }
 
 function syncFullscreenLabel() {
@@ -329,4 +360,20 @@ function handleFullscreenPointer(event) {
   state.controlsHideTimer = window.setTimeout(() => {
     app.classList.remove("show-controls");
   }, OPTIONS.controlsRevealDelay);
+}
+
+function toggleControlsCollapsed() {
+  if (window.innerWidth > 860 || document.fullscreenElement === app) {
+    return;
+  }
+
+  const isCollapsed = app.classList.toggle("mobile-controls-collapsed");
+  controlsToggleButton.setAttribute(
+    "aria-label",
+    isCollapsed ? "Show controls" : "Hide controls"
+  );
+  controlsToggleButton.setAttribute(
+    "title",
+    isCollapsed ? "Show controls" : "Hide controls"
+  );
 }

@@ -3,11 +3,12 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>PDF Flip Book</title>
+    <title>Flippy</title>
     <link rel="stylesheet" href="./styles.css" />
   </head>
   <body>
     <main class="app" id="app">
+        <input id="fileInput" type="file" accept="application/pdf,.pdf" hidden />
         <div class="drop-overlay" id="dropOverlay" aria-hidden="true">
           <div class="drop-card">Drop PDF to open</div>
         </div>
@@ -26,10 +27,23 @@
         <div class="loading-panel" id="loadingPanel">
           <div class="spinner"></div>
           <p id="loadingText">Loading sample.pdf...</p>
+          <button id="selectFileButton" class="select-file-button hidden" type="button">
+            Choose PDF
+          </button>
         </div>
 
         <section class="controls" id="controls">
           <div class="controls-row">
+            <button
+              id="controlsToggleButton"
+              class="controls-toggle"
+              type="button"
+              aria-label="Toggle controls"
+              title="Toggle controls"
+            >
+              <span aria-hidden="true">☰</span>
+            </button>
+            <p class="status" id="statusText">Loading...</p>
             <button id="prevButton" type="button" aria-label="Previous page" title="Previous page">
               <span aria-hidden="true">◀</span>
             </button>
@@ -45,7 +59,6 @@
             <button id="nextButton" type="button" aria-label="Next page" title="Next page">
               <span aria-hidden="true">▶</span>
             </button>
-            <p class="status" id="statusText">Loading...</p>
           </div>
         </section>
     </main>
