@@ -51,9 +51,21 @@
             <button id="uploadButton" type="button">Upload PDF</button>
             <a id="downloadLink" href="./sample.pdf" download="sample.pdf">Download PDF</a>
             <a id="downloadAppLink" href="./flippy-webapp.zip" download="flippy-webapp.zip">
-              Download App ZIP
+              Download Entire Package
             </a>
           </div>
+          <button id="shareButton" type="button">Share</button>
+          <label class="side-panel-embed" for="embedCode">
+            <span class="side-panel-label">Embed Code</span>
+            <textarea
+              id="embedCode"
+              readonly
+              spellcheck="false"
+              aria-label="Embed code"
+            ></textarea>
+          </label>
+          <button id="copyEmbedButton" type="button">Copy Embed Code</button>
+          <p class="side-panel-feedback" id="panelFeedback" aria-live="polite"></p>
         </aside>
 
         <section class="controls" id="controls">
@@ -81,6 +93,14 @@
             />
             <button id="nextButton" type="button" aria-label="Next page" title="Next page">
               <span aria-hidden="true">▶</span>
+            </button>
+            <button
+              id="fullscreenButton"
+              type="button"
+              aria-label="Enter fullscreen"
+              title="Enter fullscreen"
+            >
+              <span aria-hidden="true">⛶</span>
             </button>
             <p class="status" id="statusText">Loading...</p>
           </div>

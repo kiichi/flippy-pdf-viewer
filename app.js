@@ -23,8 +23,12 @@ const sidePanelCloseButton = document.getElementById("sidePanelCloseButton");
 const sidePanelLabel = document.getElementById("sidePanelLabel");
 const fileNameText = document.getElementById("fileNameText");
 const uploadButton = document.getElementById("uploadButton");
+const shareButton = document.getElementById("shareButton");
 const downloadLink = document.getElementById("downloadLink");
 const downloadAppLink = document.getElementById("downloadAppLink");
+const copyEmbedButton = document.getElementById("copyEmbedButton");
+const embedCode = document.getElementById("embedCode");
+const panelFeedback = document.getElementById("panelFeedback");
 const leftPage = document.getElementById("leftPage");
 const rightPage = document.getElementById("rightPage");
 const flipSheet = document.getElementById("flipSheet");
@@ -33,6 +37,7 @@ const flipBack = document.getElementById("flipBack");
 const controlsToggleButton = document.getElementById("controlsToggleButton");
 const prevButton = document.getElementById("prevButton");
 const nextButton = document.getElementById("nextButton");
+const fullscreenButton = document.getElementById("fullscreenButton");
 const spreadSlider = document.getElementById("spreadSlider");
 const statusText = document.getElementById("statusText");
 const loadingPanel = document.getElementById("loadingPanel");
@@ -48,6 +53,7 @@ const state = {
   dragDepth: 0,
   sourceName: "sample.pdf",
   currentPdfBlob: null,
+  feedbackTimer: 0,
 };
 
 book.style.setProperty("--flip-duration", `${OPTIONS.flipDuration}ms`);
@@ -59,7 +65,10 @@ bootstrap().catch((error) => {
 });
 
 async function bootstrap() {
+  syncEmbedMode();
   bindEvents();
+  syncFullscreenLabel();
+  syncEmbedCode();
   disableControls(true);
   await loadPdfFromUrl(OPTIONS.pdfPath, state.sourceName);
 }
@@ -68,9 +77,13 @@ function bindEvents() {
   controlsToggleButton.addEventListener("click", openSidePanel);
   sidePanelCloseButton.addEventListener("click", closeSidePanel);
   uploadButton.addEventListener("click", () => fileInput.click());
+  shareButton.addEventListener("click", handleShare);
   downloadAppLink.addEventListener("click", handleDownloadAppZip);
+  copyEmbedButton.addEventListener("click", handleCopyEmbedCode);
+  embedCode.addEventListener("focus", handleEmbedCodeFocus);
   prevButton.addEventListener("click", () => goTo(state.spreadIndex - 1));
   nextButton.addEventListener("click", () => goTo(state.spreadIndex + 1));
+  fullscreenButton.addEventListener("click", toggleFullscreen);
   leftPage.addEventListener("click", () => goTo(state.spreadIndex - 1));
   rightPage.addEventListener("click", () => goTo(state.spreadIndex + 1));
 
@@ -197,6 +210,7 @@ function disableControls(disabled) {
   prevButton.disabled = disabled;
   nextButton.disabled = disabled;
   spreadSlider.disabled = disabled;
+  fullscreenButton.disabled = disabled;
 }
 
 async function loadPdfFromUrl(url, sourceName) {
@@ -212,8 +226,8 @@ async function loadPdfFromUrl(url, sourceName) {
 
 async function loadPdfFromFile(file) {
   const buffer = await file.arrayBuffer();
-  const objectUrl = URL.createObjectURL(file);
   state.currentPdfBlob = file;
+  const objectUrl = URL.createObjectURL(file);
   updateDownloadLink(objectUrl, file.name);
   const documentTask = pdfjsLib.getDocument({ data: buffer });
   await loadPdfDocument(documentTask, file.name);
@@ -230,6 +244,7 @@ async function loadPdfDocument(documentTask, sourceName) {
   state.sourceName = sourceName;
   sidePanelLabel.textContent = sourceName;
   fileNameText.textContent = sourceName;
+  syncEmbedCode();
   flipSheet.className = "flip-sheet hidden";
 
   const pdf = await documentTask.promise;
@@ -357,14 +372,20 @@ function showFileFallback(message) {
   leftPage.innerHTML = placeholder("Drop a PDF here");
   rightPage.innerHTML = placeholder("Or click Choose PDF");
   statusText.textContent = "0 / 0";
+  syncEmbedCode();
 }
 
 function syncFullscreenLabel() {
   const isFullscreen = document.fullscreenElement === app;
+  fullscreenButton.setAttribute("aria-label", isFullscreen ? "Exit fullscreen" : "Enter fullscreen");
+  fullscreenButton.setAttribute("title", isFullscreen ? "Exit fullscreen" : "Enter fullscreen");
+  fullscreenButton.innerHTML = `<span aria-hidden="true">${isFullscreen ? "⤢" : "⛶"}</span>`;
 
   if (!isFullscreen) {
     app.classList.remove("show-controls");
     window.clearTimeout(state.controlsHideTimer);
+  } else if (app.classList.contains("side-panel-open")) {
+    app.classList.add("show-controls");
   }
 }
 
@@ -381,22 +402,27 @@ function handleFullscreenPointer(event) {
   app.classList.add("show-controls");
   window.clearTimeout(state.controlsHideTimer);
   state.controlsHideTimer = window.setTimeout(() => {
+    if (app.classList.contains("side-panel-open")) {
+      return;
+    }
+
     app.classList.remove("show-controls");
   }, OPTIONS.controlsRevealDelay);
 }
 
 function openSidePanel() {
-  if (document.fullscreenElement === app) {
-    return;
-  }
-
   app.classList.add("side-panel-open");
   sidePanel.setAttribute("aria-hidden", "false");
+  app.classList.add("show-controls");
 }
 
 function closeSidePanel() {
   app.classList.remove("side-panel-open");
   sidePanel.setAttribute("aria-hidden", "true");
+
+  if (document.fullscreenElement !== app) {
+    app.classList.remove("show-controls");
+  }
 }
 
 function updateDownloadLink(href, filename) {
@@ -404,6 +430,7 @@ function updateDownloadLink(href, filename) {
   downloadLink.download = filename;
   sidePanelLabel.textContent = filename;
   fileNameText.textContent = filename;
+  syncEmbedCode();
 }
 
 function handleDocumentClick(event) {
@@ -422,7 +449,7 @@ async function handleDownloadAppZip(event) {
   event.preventDefault();
 
   try {
-    downloadAppLink.textContent = "Preparing ZIP...";
+    downloadAppLink.textContent = "Preparing Entire Package...";
     downloadAppLink.setAttribute("aria-disabled", "true");
 
     const zip = new window.JSZip();
@@ -460,7 +487,122 @@ async function handleDownloadAppZip(event) {
   } catch (error) {
     console.error(error);
   } finally {
-    downloadAppLink.textContent = "Download App ZIP";
+    downloadAppLink.textContent = "Download Entire Package";
     downloadAppLink.removeAttribute("aria-disabled");
+  }
+}
+
+async function toggleFullscreen() {
+  try {
+    if (document.fullscreenElement === app) {
+      await document.exitFullscreen();
+      return;
+    }
+
+    await app.requestFullscreen();
+  } catch (error) {
+    console.error(error);
+    setPanelFeedback("Fullscreen is not available here.");
+  }
+}
+
+async function handleShare() {
+  const shareUrl = getShareUrl();
+  const shareData = {
+    title: `Flippy - ${state.sourceName}`,
+    text: `Open ${state.sourceName} in Flippy`,
+    url: shareUrl,
+  };
+
+  try {
+    if (navigator.share) {
+      await navigator.share(shareData);
+      setPanelFeedback("Share sheet opened.");
+      return;
+    }
+
+    const copied = await copyText(shareUrl);
+    setPanelFeedback(copied ? "Share link copied." : "Sharing is not supported here.");
+  } catch (error) {
+    if (error?.name === "AbortError") {
+      return;
+    }
+
+    console.error(error);
+    setPanelFeedback("Could not share this page.");
+  }
+}
+
+async function handleCopyEmbedCode() {
+  try {
+    const copied = await copyText(embedCode.value);
+    if (copied) {
+      setPanelFeedback("Embed code copied.");
+      return;
+    }
+
+    embedCode.focus();
+    embedCode.select();
+    setPanelFeedback("Copy failed. Embed code selected instead.");
+  } catch (error) {
+    console.error(error);
+    embedCode.focus();
+    embedCode.select();
+    setPanelFeedback("Copy failed. Embed code selected instead.");
+  }
+}
+
+function handleEmbedCodeFocus() {
+  embedCode.select();
+}
+
+function syncEmbedMode() {
+  const isEmbedded = window.self !== window.top;
+  document.body.classList.toggle("is-embedded", isEmbedded);
+  app.classList.toggle("is-embedded", isEmbedded);
+}
+
+function syncEmbedCode() {
+  embedCode.value = `<iframe src="${escapeAttribute(getShareUrl())}" title="${escapeAttribute(
+    `Flippy viewer for ${state.sourceName}`
+  )}" width="960" height="640" style="border:0;" loading="lazy" allow="fullscreen"></iframe>`;
+}
+
+function getShareUrl() {
+  return window.location.href;
+}
+
+function setPanelFeedback(message) {
+  window.clearTimeout(state.feedbackTimer);
+  panelFeedback.textContent = message;
+
+  if (!message) {
+    return;
+  }
+
+  state.feedbackTimer = window.setTimeout(() => {
+    panelFeedback.textContent = "";
+  }, 2200);
+}
+
+function escapeAttribute(value) {
+  return String(value)
+    .replaceAll("&", "&amp;")
+    .replaceAll('"', "&quot;")
+    .replaceAll("<", "&lt;")
+    .replaceAll(">", "&gt;");
+}
+
+async function copyText(value) {
+  if (!navigator.clipboard?.writeText) {
+    return false;
+  }
+
+  try {
+    await navigator.clipboard.writeText(value);
+    return true;
+  } catch (error) {
+    console.error(error);
+    return false;
   }
 }
