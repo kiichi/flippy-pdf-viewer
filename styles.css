@@ -145,24 +145,93 @@ select {
   gap: 8px;
 }
 
+.side-panel-bookmarks {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  min-height: 0;
+}
+
+.side-panel-section-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.bookmarks-empty {
+  margin: 0;
+  color: var(--muted);
+  font-size: 0.82rem;
+}
+
+.bookmarks-list {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  max-height: 180px;
+  overflow: auto;
+}
+
+.bookmark-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.bookmark-link {
+  flex: 1;
+  min-height: 36px;
+  padding: 0;
+  justify-content: flex-start;
+  text-align: left;
+  border: 0;
+  background: transparent;
+  color: var(--ink);
+}
+
+.bookmark-remove {
+  flex: 0 0 auto;
+  min-width: 24px;
+  min-height: 24px;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: var(--muted);
+}
+
 .side-panel-embed {
   display: flex;
   flex-direction: column;
   gap: 6px;
 }
 
-.side-panel-embed textarea {
+.side-panel-embed-row {
+  display: flex;
+  align-items: stretch;
+  gap: 8px;
+}
+
+.side-panel-embed input {
   width: 100%;
-  min-height: 156px;
+  flex: 1;
+  min-height: 36px;
   padding: 10px;
-  resize: vertical;
   border: 1px solid #1f2937;
   border-radius: 0;
   background: #ffffff;
   color: var(--ink);
   font: inherit;
   font-size: 0.8rem;
-  line-height: 1.4;
+  line-height: 1.2;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+#copyEmbedButton {
+  flex: 0 0 auto;
+  min-width: 36px;
+  padding: 0;
 }
 
 .side-panel-feedback {
@@ -180,6 +249,12 @@ select {
   display: inline-flex;
   align-items: center;
   justify-content: center;
+}
+
+.bookmark-link,
+.bookmark-remove {
+  display: inline-flex;
+  align-items: center;
 }
 
 
@@ -410,6 +485,28 @@ select {
   background: #ffffff;
   color: var(--accent);
   text-decoration: none;
+}
+
+#bookmarkButton.is-active {
+  background: #111827;
+  color: #ffffff;
+}
+
+.bookmark-link:hover,
+.bookmark-link:focus-visible,
+.bookmark-remove:hover,
+.bookmark-remove:focus-visible {
+  background: transparent;
+}
+
+.bookmark-link:hover,
+.bookmark-link:focus-visible {
+  text-decoration: underline;
+}
+
+.bookmark-remove:hover,
+.bookmark-remove:focus-visible {
+  color: var(--ink);
 }
 
 button,

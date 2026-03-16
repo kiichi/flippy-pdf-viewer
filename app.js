@@ -37,12 +37,15 @@ const flipBack = document.getElementById("flipBack");
 const controlsToggleButton = document.getElementById("controlsToggleButton");
 const prevButton = document.getElementById("prevButton");
 const nextButton = document.getElementById("nextButton");
+const bookmarkButton = document.getElementById("bookmarkButton");
 const fullscreenButton = document.getElementById("fullscreenButton");
 const spreadSlider = document.getElementById("spreadSlider");
 const statusText = document.getElementById("statusText");
 const loadingPanel = document.getElementById("loadingPanel");
 const loadingText = document.getElementById("loadingText");
 const selectFileButton = document.getElementById("selectFileButton");
+const bookmarksList = document.getElementById("bookmarksList");
+const bookmarksEmpty = document.getElementById("bookmarksEmpty");
 
 const state = {
   pageCanvases: [],
@@ -54,7 +57,10 @@ const state = {
   sourceName: "sample.pdf",
   currentPdfBlob: null,
   feedbackTimer: 0,
+  bookmarks: [],
 };
+
+const BOOKMARK_STORAGE_KEY = "flippy-bookmarks-v1";
 
 book.style.setProperty("--flip-duration", `${OPTIONS.flipDuration}ms`);
 book.style.setProperty("--perspective", `${OPTIONS.perspective}px`);
@@ -83,6 +89,7 @@ function bindEvents() {
   embedCode.addEventListener("focus", handleEmbedCodeFocus);
   prevButton.addEventListener("click", () => goTo(state.spreadIndex - 1));
   nextButton.addEventListener("click", () => goTo(state.spreadIndex + 1));
+  bookmarkButton.addEventListener("click", toggleCurrentBookmark);
   fullscreenButton.addEventListener("click", toggleFullscreen);
   leftPage.addEventListener("click", () => goTo(state.spreadIndex - 1));
   rightPage.addEventListener("click", () => goTo(state.spreadIndex + 1));
@@ -110,6 +117,7 @@ function bindEvents() {
   selectFileButton.addEventListener("click", () => fileInput.click());
   fileInput.addEventListener("change", handleFileSelect);
   document.addEventListener("click", handleDocumentClick);
+  bookmarksList.addEventListener("click", handleBookmarkListClick);
 }
 
 function goTo(targetSpread) {
@@ -177,6 +185,7 @@ function renderSpread(spreadIndex) {
   leftPage.classList.toggle("can-turn", spreadIndex > 0);
   rightPage.classList.toggle("can-turn", spreadIndex < state.spreadCount - 1);
   statusText.textContent = `${spreadIndex + 1} / ${state.spreadCount}`;
+  syncBookmarkButton();
 }
 
 function getSpreadPages(spreadIndex) {
@@ -210,6 +219,7 @@ function disableControls(disabled) {
   prevButton.disabled = disabled;
   nextButton.disabled = disabled;
   spreadSlider.disabled = disabled;
+  bookmarkButton.disabled = disabled;
   fullscreenButton.disabled = disabled;
 }
 
@@ -242,6 +252,7 @@ async function loadPdfDocument(documentTask, sourceName) {
   state.pageCanvases = [];
   state.spreadIndex = 0;
   state.sourceName = sourceName;
+  state.bookmarks = getBookmarksForSource(sourceName);
   sidePanelLabel.textContent = sourceName;
   fileNameText.textContent = sourceName;
   syncEmbedCode();
@@ -268,6 +279,11 @@ async function loadPdfDocument(documentTask, sourceName) {
   }
 
   state.spreadCount = Math.max(1, Math.ceil((state.pageCanvases.length + 1) / 2));
+  state.bookmarks = state.bookmarks
+    .filter((bookmark) => bookmark.spreadIndex >= 0 && bookmark.spreadIndex < state.spreadCount)
+    .map((bookmark) => createBookmark(bookmark.spreadIndex));
+  persistBookmarks();
+  renderBookmarks();
   spreadSlider.max = String(state.spreadCount - 1);
   spreadSlider.value = "0";
   renderSpread(0);
@@ -372,6 +388,9 @@ function showFileFallback(message) {
   leftPage.innerHTML = placeholder("Drop a PDF here");
   rightPage.innerHTML = placeholder("Or click Choose PDF");
   statusText.textContent = "0 / 0";
+  state.bookmarks = [];
+  renderBookmarks();
+  syncBookmarkButton();
   syncEmbedCode();
 }
 
@@ -443,6 +462,182 @@ function handleDocumentClick(event) {
   }
 
   closeSidePanel();
+}
+
+function toggleCurrentBookmark() {
+  if (state.busy || state.spreadCount < 1) {
+    return;
+  }
+
+  const existingIndex = state.bookmarks.findIndex(
+    (bookmark) => bookmark.spreadIndex === state.spreadIndex
+  );
+
+  if (existingIndex >= 0) {
+    state.bookmarks.splice(existingIndex, 1);
+    persistBookmarks();
+    renderBookmarks();
+    syncBookmarkButton();
+    setPanelFeedback("Bookmark removed.");
+    return;
+  }
+
+  state.bookmarks.push(createBookmark(state.spreadIndex));
+  state.bookmarks.sort((left, right) => left.spreadIndex - right.spreadIndex);
+  persistBookmarks();
+  renderBookmarks();
+  syncBookmarkButton();
+  setPanelFeedback("Bookmark added.");
+}
+
+function createBookmark(spreadIndex) {
+  const pages = getSpreadPages(spreadIndex);
+
+  return {
+    spreadIndex,
+    label: formatBookmarkLabel(spreadIndex, pages),
+  };
+}
+
+function formatBookmarkLabel(spreadIndex, pages = getSpreadPages(spreadIndex)) {
+  if (spreadIndex === 0) {
+    return "Cover";
+  }
+
+  if (pages.left && pages.right) {
+    return `Pages ${pages.left}-${pages.right}`;
+  }
+
+  const pageNumber = pages.left || pages.right || spreadIndex + 1;
+  return `Page ${pageNumber}`;
+}
+
+function renderBookmarks() {
+  bookmarksList.replaceChildren();
+  bookmarksEmpty.hidden = state.bookmarks.length > 0;
+
+  for (const bookmark of state.bookmarks) {
+    const item = document.createElement("div");
+    item.className = "bookmark-item";
+
+    const linkButton = document.createElement("button");
+    linkButton.type = "button";
+    linkButton.className = "bookmark-link";
+    linkButton.dataset.action = "go";
+    linkButton.dataset.spreadIndex = String(bookmark.spreadIndex);
+    linkButton.textContent = bookmark.label;
+
+    const removeButton = document.createElement("button");
+    removeButton.type = "button";
+    removeButton.className = "bookmark-remove";
+    removeButton.dataset.action = "remove";
+    removeButton.dataset.spreadIndex = String(bookmark.spreadIndex);
+    removeButton.setAttribute("aria-label", `Remove bookmark ${bookmark.label}`);
+    removeButton.title = "Remove bookmark";
+    removeButton.innerHTML = '<span aria-hidden="true">✕</span>';
+
+    item.append(linkButton, removeButton);
+    bookmarksList.append(item);
+  }
+}
+
+function handleBookmarkListClick(event) {
+  const button = event.target.closest("button[data-action]");
+  if (!button) {
+    return;
+  }
+
+  const spreadIndex = Number(button.dataset.spreadIndex);
+  if (!Number.isInteger(spreadIndex)) {
+    return;
+  }
+
+  if (button.dataset.action === "remove") {
+    removeBookmark(spreadIndex);
+    return;
+  }
+
+  goTo(spreadIndex);
+  closeSidePanel();
+}
+
+function removeBookmark(spreadIndex) {
+  const nextBookmarks = state.bookmarks.filter(
+    (bookmark) => bookmark.spreadIndex !== spreadIndex
+  );
+
+  if (nextBookmarks.length === state.bookmarks.length) {
+    return;
+  }
+
+  state.bookmarks = nextBookmarks;
+  persistBookmarks();
+  renderBookmarks();
+  syncBookmarkButton();
+  setPanelFeedback("Bookmark removed.");
+}
+
+function syncBookmarkButton() {
+  const currentSpreadIsBookmarked = state.bookmarks.some(
+    (bookmark) => bookmark.spreadIndex === state.spreadIndex
+  );
+
+  bookmarkButton.classList.toggle("is-active", currentSpreadIsBookmarked);
+  bookmarkButton.setAttribute(
+    "aria-label",
+    currentSpreadIsBookmarked ? "Remove bookmark" : "Add bookmark"
+  );
+  bookmarkButton.setAttribute(
+    "title",
+    currentSpreadIsBookmarked ? "Remove bookmark" : "Add bookmark"
+  );
+  bookmarkButton.innerHTML = `<span aria-hidden="true">${
+    currentSpreadIsBookmarked ? "★" : "☆"
+  }</span>`;
+}
+
+function getBookmarksForSource(sourceName) {
+  const bookmarkMap = readBookmarkStorage();
+  const bookmarkEntries = bookmarkMap[sourceName];
+
+  if (!Array.isArray(bookmarkEntries)) {
+    return [];
+  }
+
+  return bookmarkEntries
+    .map((spreadIndex) => Number(spreadIndex))
+    .filter((spreadIndex) => Number.isInteger(spreadIndex) && spreadIndex >= 0)
+    .sort((left, right) => left - right)
+    .map((spreadIndex) => createBookmark(spreadIndex));
+}
+
+function persistBookmarks() {
+  const bookmarkMap = readBookmarkStorage();
+  bookmarkMap[state.sourceName] = state.bookmarks.map((bookmark) => bookmark.spreadIndex);
+  writeBookmarkStorage(bookmarkMap);
+}
+
+function readBookmarkStorage() {
+  try {
+    const raw = window.localStorage.getItem(BOOKMARK_STORAGE_KEY);
+    if (!raw) {
+      return {};
+    }
+
+    const parsed = JSON.parse(raw);
+    return parsed && typeof parsed === "object" ? parsed : {};
+  } catch (error) {
+    console.error(error);
+    return {};
+  }
+}
+
+function writeBookmarkStorage(bookmarkMap) {
+  try {
+    window.localStorage.setItem(BOOKMARK_STORAGE_KEY, JSON.stringify(bookmarkMap));
+  } catch (error) {
+    console.error(error);
+  }
 }
 
 async function handleDownloadAppZip(event) {

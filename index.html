@@ -57,14 +57,25 @@
           <button id="shareButton" type="button">Share</button>
           <label class="side-panel-embed" for="embedCode">
             <span class="side-panel-label">Embed Code</span>
-            <textarea
-              id="embedCode"
-              readonly
-              spellcheck="false"
-              aria-label="Embed code"
-            ></textarea>
+            <div class="side-panel-embed-row">
+              <input
+                id="embedCode"
+                readonly
+                aria-label="Embed code"
+                type="text"
+              />
+              <button id="copyEmbedButton" type="button" aria-label="Copy embed code" title="Copy embed code">
+                <span aria-hidden="true">📋</span>
+              </button>
+            </div>
           </label>
-          <button id="copyEmbedButton" type="button">Copy Embed Code</button>
+          <section class="side-panel-bookmarks" aria-labelledby="bookmarksHeading">
+            <div class="side-panel-section-heading">
+              <span class="side-panel-label" id="bookmarksHeading">Bookmarks</span>
+            </div>
+            <p class="bookmarks-empty" id="bookmarksEmpty">No bookmarks yet.</p>
+            <div class="bookmarks-list" id="bookmarksList"></div>
+          </section>
           <p class="side-panel-feedback" id="panelFeedback" aria-live="polite"></p>
         </aside>
 
@@ -93,6 +104,14 @@
             />
             <button id="nextButton" type="button" aria-label="Next page" title="Next page">
               <span aria-hidden="true">▶</span>
+            </button>
+            <button
+              id="bookmarkButton"
+              type="button"
+              aria-label="Add bookmark"
+              title="Add bookmark"
+            >
+              <span aria-hidden="true">☆</span>
             </button>
             <button
               id="fullscreenButton"
