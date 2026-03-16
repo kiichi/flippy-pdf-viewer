@@ -455,17 +455,28 @@ async function handleDownloadAppZip(event) {
     const zip = new window.JSZip();
     const assets = ["README.md", "index.html", "app.js", "styles.css"];
 
+    if (state.sourceName === "sample.pdf") {
+      assets.push("sample.pdf");
+    }
+
     const assetResults = await Promise.all(
       assets.map(async (path) => {
         const response = await fetch(path);
         if (!response.ok) {
           throw new Error(`Could not fetch ${path}`);
         }
-        return { path, content: await response.text() };
+        const content =
+          path.endsWith(".pdf") ? await response.blob() : await response.text();
+        return { path, content };
       })
     );
 
     for (const asset of assetResults) {
+      if (asset.path === "app.js") {
+        zip.file(asset.path, createPackagedAppScript(asset.content, state.sourceName));
+        continue;
+      }
+
       zip.file(asset.path, asset.content);
     }
 
@@ -490,6 +501,15 @@ async function handleDownloadAppZip(event) {
     downloadAppLink.textContent = "Download Entire Package";
     downloadAppLink.removeAttribute("aria-disabled");
   }
+}
+
+function createPackagedAppScript(source, pdfFilename) {
+  const pdfPathLiteral = JSON.stringify(`./${pdfFilename}`);
+  const sourceNameLiteral = JSON.stringify(pdfFilename);
+
+  return source
+    .replace(/pdfPath: "\.\/sample\.pdf"/, `pdfPath: ${pdfPathLiteral}`)
+    .replace(/sourceName: "sample\.pdf"/, `sourceName: ${sourceNameLiteral}`);
 }
 
 async function toggleFullscreen() {
