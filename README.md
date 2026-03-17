@@ -25,45 +25,6 @@ Live demo: https://kiichi.github.io/flippy-pdf-viewer/
 - Responsive layout for desktop and mobile
 - Embedded mode detection for iframe usage
 
-## How It Works
-
-Flippy uses `pdf.js` to render each PDF page onto a canvas, then arranges those canvases into left/right spreads. The first spread behaves like a book cover, and later spreads show two pages at a time with a flipping animation between them.
-
-The app ships as a simple static web project:
-
-- `index.html` contains the UI structure
-- `app.js` handles PDF loading, rendering, navigation, sharing, and packaging
-- `styles.css` contains the flipbook layout and animations
-- `sample.pdf` is the default document loaded on startup
-
-## Getting Started
-
-### 1. Open the project
-
-Clone or download this repository, then move into the project folder.
-
-### 2. Run it from a local web server
-
-Because the app uses ES modules and loads `sample.pdf` with `fetch`, it should be served over HTTP rather than opened directly as a `file://` page.
-
-Examples:
-
-```bash
-python3 -m http.server 8000
-```
-
-or
-
-```bash
-npx serve .
-```
-
-Then open:
-
-```text
-http://localhost:8000
-```
-
 ## How To Use
 
 ### Open a PDF
@@ -127,6 +88,45 @@ Deployed embed example page:
 
 ```text
 https://kiichit.neocities.org/test
+```
+
+## How It Works
+
+Flippy uses `pdf.js` to render each PDF page onto a canvas, then arranges those canvases into left/right spreads. The first spread behaves like a book cover, and later spreads show two pages at a time with a flipping animation between them.
+
+The app ships as a simple static web project:
+
+- `index.html` contains the UI structure
+- `app.js` handles PDF loading, rendering, navigation, sharing, and packaging
+- `styles.css` contains the flipbook layout and animations
+- `sample.pdf` is the default document loaded on startup
+
+## Getting Started
+
+### 1. Open the project
+
+Clone or download this repository, then move into the project folder.
+
+### 2. Run it from a local web server
+
+Because the app uses ES modules and loads `sample.pdf` with `fetch`, it should be served over HTTP rather than opened directly as a `file://` page.
+
+Examples:
+
+```bash
+python3 -m http.server 8000
+```
+
+or
+
+```bash
+npx serve .
+```
+
+Then open:
+
+```text
+http://localhost:8000
 ```
 
 ## Download Entire Package
