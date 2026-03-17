@@ -74,6 +74,8 @@ You can use Flippy in three ways:
 2. Click `Upload PDF` or `Choose PDF`
 3. Drag and drop a `.pdf` file onto the app
 
+Uploading a PDF in Flippy does not upload it to a server. The file stays in your own browser so you can preview and read it locally.
+
 ### Navigate
 
 - Click the right page or `▶` to move forward
@@ -88,6 +90,13 @@ Click the bookmark button next to fullscreen to save the current spread. Saved b
 ### Fullscreen
 
 Click the fullscreen button to enter immersive reading mode. In fullscreen, the controls appear near the bottom and hide automatically until you move the pointer near the lower edge.
+
+### Download
+
+From the side panel, you can:
+
+- Download the currently loaded PDF
+- Download the entire web app as a zip package
 
 ### Share
 
@@ -120,13 +129,6 @@ Deployed embed example page:
 https://kiichit.neocities.org/test
 ```
 
-### Download
-
-From the side panel, you can:
-
-- Download the currently loaded PDF
-- Download the entire web app as a zip package
-
 ## Download Entire Package
 
 `Download Entire Package` creates a zip that includes:
@@ -137,7 +139,19 @@ From the side panel, you can:
 - `styles.css`
 - The currently loaded PDF
 
-When the packaged zip is created, Flippy rewrites the default PDF path inside `app.js` so the exported app opens that PDF immediately.
+When the packaged zip is created, Flippy rewrites the default PDF path inside `app.js` so the exported app opens that PDF immediately. That package is ready to upload to your own website and share with others.
+
+## Create And Publish Your Own Flip Book
+
+You can turn any PDF into your own hosted flip book directly from the web app. The PDF upload happens only in your local browser, but `Download Entire Package` gives you a publishable version of the app that you can host anywhere.
+
+1. Open Flippy in your browser
+2. Upload your PDF
+3. Click `Download Entire Package`
+4. Unzip the downloaded package
+5. Upload the extracted files to Neocities
+
+Once uploaded, your site will open with your PDF as the default flip book.
 
 ## Customization
 

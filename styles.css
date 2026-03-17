@@ -152,6 +152,34 @@ select {
   min-height: 0;
 }
 
+.side-panel-about {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding-top: 4px;
+  border-top: 1px solid var(--line);
+}
+
+.side-panel-about-text {
+  margin: 0;
+  color: var(--muted);
+  font-size: 0.82rem;
+  line-height: 1.45;
+}
+
+.side-panel-about-link {
+  min-height: 36px;
+  padding: 0 10px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid #1f2937;
+  border-radius: 0;
+  background: #ffffff;
+  color: var(--accent);
+  text-decoration: none;
+}
+
 .side-panel-section-heading {
   display: flex;
   align-items: center;
@@ -479,7 +507,8 @@ select {
 }
 
 .side-panel-close,
-.side-panel-actions a {
+.side-panel-actions a,
+.side-panel-about-link {
   border: 1px solid #1f2937;
   border-radius: 0;
   background: #ffffff;
