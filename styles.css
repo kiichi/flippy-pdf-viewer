@@ -113,6 +113,7 @@ select {
   align-items: center;
   justify-content: space-between;
   gap: 8px;
+  min-width: 0;
 }
 
 .side-panel-title {
@@ -129,6 +130,8 @@ select {
   font-size: 0.74rem;
   text-transform: uppercase;
   letter-spacing: 0.08em;
+  min-width: 0;
+  overflow-wrap: anywhere;
 }
 
 .side-panel-file {
@@ -136,6 +139,8 @@ select {
   color: var(--ink);
   font-size: 0.95rem;
   font-weight: 600;
+  min-width: 0;
+  overflow-wrap: anywhere;
   word-break: break-word;
 }
 
