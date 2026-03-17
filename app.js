@@ -14,6 +14,8 @@ const OPTIONS = {
   controlsRevealDelay: 1200,
 };
 
+const APP_VERSION = "v0.1.0";
+
 const app = document.getElementById("app");
 const fileInput = document.getElementById("fileInput");
 const dropOverlay = document.getElementById("dropOverlay");
@@ -21,7 +23,6 @@ const book = document.getElementById("book");
 const sidePanel = document.getElementById("sidePanel");
 const sidePanelCloseButton = document.getElementById("sidePanelCloseButton");
 const sidePanelLabel = document.getElementById("sidePanelLabel");
-const fileNameText = document.getElementById("fileNameText");
 const uploadButton = document.getElementById("uploadButton");
 const shareButton = document.getElementById("shareButton");
 const downloadLink = document.getElementById("downloadLink");
@@ -46,6 +47,7 @@ const loadingText = document.getElementById("loadingText");
 const selectFileButton = document.getElementById("selectFileButton");
 const bookmarksList = document.getElementById("bookmarksList");
 const bookmarksEmpty = document.getElementById("bookmarksEmpty");
+const aboutVersionText = document.getElementById("aboutVersionText");
 
 const state = {
   pageCanvases: [],
@@ -75,8 +77,13 @@ async function bootstrap() {
   bindEvents();
   syncFullscreenLabel();
   syncEmbedCode();
+  syncAboutVersion();
   disableControls(true);
   await loadPdfFromUrl(OPTIONS.pdfPath, state.sourceName);
+}
+
+function syncAboutVersion() {
+  aboutVersionText.textContent = `Version ${APP_VERSION}`;
 }
 
 function bindEvents() {
@@ -254,7 +261,6 @@ async function loadPdfDocument(documentTask, sourceName) {
   state.sourceName = sourceName;
   state.bookmarks = getBookmarksForSource(sourceName);
   sidePanelLabel.textContent = sourceName;
-  fileNameText.textContent = sourceName;
   syncEmbedCode();
   flipSheet.className = "flip-sheet hidden";
 
@@ -448,7 +454,6 @@ function updateDownloadLink(href, filename) {
   downloadLink.href = href;
   downloadLink.download = filename;
   sidePanelLabel.textContent = filename;
-  fileNameText.textContent = filename;
   syncEmbedCode();
 }
 

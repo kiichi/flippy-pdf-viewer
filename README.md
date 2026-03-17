@@ -16,7 +16,7 @@ Live demo: https://kiichi.github.io/flippy-pdf-viewer/
 - Bookmark the current spread
 - Fullscreen reading mode
 - Auto-hiding controls in fullscreen
-- Upload a local PDF from the side panel
+- Open a local PDF from the side panel
 - Drag and drop a PDF directly onto the app
 - Download the currently loaded PDF
 - Native share support when available
@@ -71,7 +71,7 @@ http://localhost:8000
 You can use Flippy in three ways:
 
 1. Let it load the included `sample.pdf`
-2. Click `Upload PDF` or `Choose PDF`
+2. Click `Open PDF` or `Choose PDF`
 3. Drag and drop a `.pdf` file onto the app
 
 Uploading a PDF in Flippy does not upload it to a server. The file stays in your own browser so you can preview and read it locally.

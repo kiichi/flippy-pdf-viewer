@@ -33,9 +33,8 @@
         </div>
 
         <aside class="side-panel" id="sidePanel" aria-hidden="true">
-          <p class="side-panel-title">Flippy</p>
           <div class="side-panel-header">
-            <p class="side-panel-label" id="sidePanelLabel">sample.pdf</p>
+            <p class="side-panel-file" id="sidePanelLabel">sample.pdf</p>
             <button
               id="sidePanelCloseButton"
               class="side-panel-close"
@@ -46,9 +45,8 @@
               <span aria-hidden="true">✕</span>
             </button>
           </div>
-          <p class="side-panel-file" id="fileNameText">sample.pdf</p>
           <div class="side-panel-actions">
-            <button id="uploadButton" type="button">Upload PDF</button>
+            <button id="uploadButton" type="button">Open PDF</button>
             <a id="downloadLink" href="./sample.pdf" download="sample.pdf">Download PDF</a>
             <a id="downloadAppLink" href="./flippy-webapp.zip" download="flippy-webapp.zip">
               Download Entire Package
@@ -84,14 +82,17 @@
               Flippy is a lightweight PDF flipbook viewer for the web with sharing,
               embedding, fullscreen reading, and drag-and-drop uploads.
             </p>
-            <a
-              class="side-panel-about-link"
-              href="https://github.com/kiichi/flippy-pdf-viewer"
-              target="_blank"
-              rel="noreferrer"
-            >
-              View source on GitHub
-            </a>
+            <div class="side-panel-about-meta">
+              <p class="side-panel-version" id="aboutVersionText">Version</p>
+              <a
+                class="side-panel-about-link"
+                href="https://github.com/kiichi/flippy-pdf-viewer"
+                target="_blank"
+                rel="noreferrer"
+              >
+                View project on GitHub
+              </a>
+            </div>
           </section>
           <p class="side-panel-feedback" id="panelFeedback" aria-live="polite"></p>
         </aside>

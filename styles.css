@@ -113,15 +113,13 @@ select {
   align-items: center;
   justify-content: space-between;
   gap: 8px;
+  min-height: 36px;
   min-width: 0;
 }
 
-.side-panel-title {
-  margin: 0;
-  color: var(--ink);
-  font-size: 1.05rem;
-  font-weight: 700;
-  letter-spacing: -0.02em;
+.side-panel-close {
+  min-width: 36px;
+  flex: 0 0 auto;
 }
 
 .side-panel-label {
@@ -139,6 +137,7 @@ select {
   color: var(--ink);
   font-size: 0.95rem;
   font-weight: 600;
+  line-height: 1.2;
   min-width: 0;
   overflow-wrap: anywhere;
   word-break: break-word;
@@ -172,17 +171,26 @@ select {
   line-height: 1.45;
 }
 
+.side-panel-about-meta {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.side-panel-version {
+  margin: 0;
+  color: var(--ink);
+  font-size: 0.8rem;
+  font-weight: 600;
+}
+
 .side-panel-about-link {
-  min-height: 36px;
-  padding: 0 10px;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  border: 1px solid #1f2937;
-  border-radius: 0;
-  background: #ffffff;
+  align-self: flex-start;
   color: var(--accent);
-  text-decoration: none;
+  font-size: 0.78rem;
+  text-decoration: underline;
 }
 
 .side-panel-section-heading {
@@ -276,12 +284,14 @@ select {
 
 .side-panel-actions button,
 .side-panel-actions a,
+.side-panel > button,
 .side-panel-close {
   min-height: 36px;
   padding: 0 10px;
   display: inline-flex;
   align-items: center;
   justify-content: center;
+  font-size: 0.88rem;
 }
 
 .bookmark-link,
@@ -512,8 +522,7 @@ select {
 }
 
 .side-panel-close,
-.side-panel-actions a,
-.side-panel-about-link {
+.side-panel-actions a {
   border: 1px solid #1f2937;
   border-radius: 0;
   background: #ffffff;
