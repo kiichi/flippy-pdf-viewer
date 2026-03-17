@@ -104,14 +104,20 @@ Example:
 
 ```html
 <iframe
-  src="https://your-site.example/flippy/"
-  title="Flippy viewer"
+  src="https://kiichi.github.io/flippy-pdf-viewer/"
+  title="Flippy viewer for sample.pdf"
   width="960"
   height="640"
   style="border:0;"
   loading="lazy"
   allow="fullscreen"
 ></iframe>
+```
+
+Deployed embed example page:
+
+```text
+https://kiichit.neocities.org/test
 ```
 
 ### Download
