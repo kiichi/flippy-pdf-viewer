@@ -22,6 +22,7 @@ Live demo: https://kiichi.github.io/flippy-pdf-viewer/
 - Native share support when available
 - Copyable iframe embed code
 - "Download Entire Package" export as a self-contained zip
+- Optional read-only mode that hides builder tools and disables drag-and-drop uploads
 - Responsive layout for desktop and mobile
 - Embedded mode detection for iframe usage
 
@@ -36,6 +37,14 @@ You can use Flippy in three ways:
 3. Drag and drop a `.pdf` file onto the app
 
 Uploading a PDF in Flippy does not upload it to a server. The file stays in your own browser so you can preview and read it locally.
+
+### Create Your Own Flipbook
+
+Use the `Create Your Own Flipbook` section in the side panel to:
+
+- Open a different PDF
+- Download the entire app package
+- Reset saved local state
 
 ### Navigate
 
@@ -131,7 +140,12 @@ http://localhost:8000
 
 ## Download Entire Package
 
-`Download Entire Package` creates a zip that includes:
+`Download Entire Package` asks whether the exported app should be `full` or `readonly`.
+
+- `full`: keeps upload tools, drag and drop, reset, and package export available
+- `readonly`: hides the builder section and disables uploads and drag and drop
+
+Then it creates a zip that includes:
 
 - `README.md`
 - `index.html`
@@ -158,6 +172,7 @@ Once uploaded, your site will open with your PDF as the default flip book.
 The main app options live near the top of [`app.js`](/Users/kiichitakeuchi/work/web/prj/flip-book-pdf/app.js):
 
 - `pdfPath`: default PDF loaded on startup
+- `builderTools`: show or hide the `Create Your Own Flipbook` section and disable or allow uploads and drag and drop
 - `renderScale`: PDF render resolution
 - `keyboardNavigation`: enable or disable arrow-key navigation
 - `blankLabel`: label used for empty pages
@@ -167,6 +182,8 @@ The main app options live near the top of [`app.js`](/Users/kiichitakeuchi/work/
 - `controlsRevealDelay`: delay before fullscreen controls hide again
 
 To use a different default PDF, replace `sample.pdf` and update `pdfPath` if needed.
+
+To turn Flippy into a read-only viewer, set `builderTools` to `false` in [`app.js`](/Users/kiichitakeuchi/work/web/prj/flip-book-pdf/app.js). That hides the builder section, disables drag and drop, and prevents users from opening a different local PDF.
 
 ## Tech Stack
 

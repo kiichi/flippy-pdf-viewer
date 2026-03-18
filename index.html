@@ -7,7 +7,7 @@
     <link rel="stylesheet" href="./styles.css" />
   </head>
   <body>
-    <main class="app" id="app">
+    <main class="app is-initializing" id="app">
         <input id="fileInput" type="file" accept="application/pdf,.pdf" hidden />
         <div class="drop-overlay" id="dropOverlay" aria-hidden="true">
           <div class="drop-card">Drop PDF to open</div>
@@ -45,34 +45,30 @@
               <span aria-hidden="true">✕</span>
             </button>
           </div>
-          <div class="side-panel-actions">
-            <button id="uploadButton" type="button">Open PDF</button>
-            <a id="downloadLink" href="./sample.pdf" download="sample.pdf">Download PDF</a>
-            <a id="downloadAppLink" href="./flippy-webapp.zip" download="flippy-webapp.zip">
-              Download Entire Package
-            </a>
-          </div>
+          <a id="downloadLink" class="side-panel-button-link" href="./sample.pdf" download="sample.pdf">
+            Download PDF
+          </a>
           <button id="shareButton" type="button">Share</button>
-          <label class="side-panel-embed" for="embedCode">
-            <span class="side-panel-label">Embed Code</span>
-            <div class="side-panel-embed-row">
-              <input
-                id="embedCode"
-                readonly
-                aria-label="Embed code"
-                type="text"
-              />
-              <button id="copyEmbedButton" type="button" aria-label="Copy embed code" title="Copy embed code">
-                <span aria-hidden="true">📋</span>
-              </button>
-            </div>
-          </label>
           <section class="side-panel-bookmarks" aria-labelledby="bookmarksHeading">
             <div class="side-panel-section-heading">
               <span class="side-panel-label" id="bookmarksHeading">Bookmarks</span>
             </div>
             <p class="bookmarks-empty" id="bookmarksEmpty">No bookmarks yet.</p>
             <div class="bookmarks-list" id="bookmarksList"></div>
+          </section>
+          <section
+            class="side-panel-actions side-panel-actions-secondary"
+            id="builderSection"
+            aria-labelledby="builderHeading"
+          >
+            <div class="side-panel-section-heading">
+              <span class="side-panel-label" id="builderHeading">Create Your Own Flipbook</span>
+            </div>
+            <button id="uploadButton" type="button">Open PDF</button>
+            <a id="downloadAppLink" href="./flippy-webapp.zip" download="flippy-webapp.zip">
+              Download Entire Package
+            </a>
+            <button id="resetAllButton" type="button">Reset All</button>
           </section>
           <section class="side-panel-about" aria-labelledby="aboutFlippyHeading">
             <div class="side-panel-section-heading">
@@ -108,7 +104,13 @@
             >
               <span aria-hidden="true">☰</span>
             </button>
-            <button id="prevButton" type="button" aria-label="Previous page" title="Previous page">
+            <button
+              id="prevButton"
+              type="button"
+              aria-label="Previous page"
+              title="Previous page"
+              disabled
+            >
               <span aria-hidden="true">◀</span>
             </button>
             <input
@@ -119,8 +121,9 @@
               value="0"
               step="1"
               aria-label="Jump to spread"
+              disabled
             />
-            <button id="nextButton" type="button" aria-label="Next page" title="Next page">
+            <button id="nextButton" type="button" aria-label="Next page" title="Next page" disabled>
               <span aria-hidden="true">▶</span>
             </button>
             <button
@@ -128,6 +131,7 @@
               type="button"
               aria-label="Add bookmark"
               title="Add bookmark"
+              disabled
             >
               <span aria-hidden="true">☆</span>
             </button>
@@ -136,12 +140,37 @@
               type="button"
               aria-label="Enter fullscreen"
               title="Enter fullscreen"
+              disabled
             >
               <span aria-hidden="true">⛶</span>
             </button>
             <p class="status" id="statusText">Loading...</p>
           </div>
         </section>
+
+        <div class="choice-dialog hidden" id="choiceDialog" aria-hidden="true">
+          <div class="choice-dialog-card" role="dialog" aria-modal="true" aria-labelledby="choiceDialogTitle">
+            <button
+              id="choiceDialogCloseButton"
+              class="choice-dialog-close"
+              type="button"
+              aria-label="Close dialog"
+              title="Close dialog"
+            >
+              <span aria-hidden="true">✕</span>
+            </button>
+            <p class="choice-dialog-title" id="choiceDialogTitle">Choose an option</p>
+            <p class="choice-dialog-message" id="choiceDialogMessage"></p>
+            <textarea
+              id="choiceDialogInput"
+              class="choice-dialog-input hidden"
+              aria-label="Dialog input"
+            ></textarea>
+            <div id="choiceDialogOptions" class="choice-dialog-options hidden"></div>
+            <div id="choiceDialogContent" class="choice-dialog-content hidden"></div>
+            <div class="choice-dialog-actions" id="choiceDialogActions"></div>
+          </div>
+        </div>
     </main>
 
     <script src="https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js"></script>
