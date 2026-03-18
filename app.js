@@ -15,7 +15,7 @@ const OPTIONS = {
   controlsRevealDelay: 1200,
 };
 
-const APP_VERSION = "v0.1.0";
+const APP_VERSION = "v0.2.0";
 const MAX_PERSISTED_PDF_BYTES = 25 * 1024 * 1024;
 
 const app = document.getElementById("app");
@@ -27,6 +27,7 @@ const sidePanelCloseButton = document.getElementById("sidePanelCloseButton");
 const sidePanelLabel = document.getElementById("sidePanelLabel");
 const builderSection = document.getElementById("builderSection");
 const uploadButton = document.getElementById("uploadButton");
+const editPagesButton = document.getElementById("editPagesButton");
 const shareButton = document.getElementById("shareButton");
 const downloadLink = document.getElementById("downloadLink");
 const downloadAppLink = document.getElementById("downloadAppLink");
@@ -55,6 +56,18 @@ const choiceDialogInput = document.getElementById("choiceDialogInput");
 const choiceDialogOptions = document.getElementById("choiceDialogOptions");
 const choiceDialogContent = document.getElementById("choiceDialogContent");
 const choiceDialogActions = document.getElementById("choiceDialogActions");
+const pageEditorDialog = document.getElementById("pageEditorDialog");
+const pageEditorCloseButton = document.getElementById("pageEditorCloseButton");
+const pageEditorUndoButton = document.getElementById("pageEditorUndoButton");
+const pageEditorRedoButton = document.getElementById("pageEditorRedoButton");
+const pageEditorSelectAllButton = document.getElementById("pageEditorSelectAllButton");
+const pageEditorDeselectAllButton = document.getElementById("pageEditorDeselectAllButton");
+const pageEditorDeleteSelectedButton = document.getElementById("pageEditorDeleteSelectedButton");
+const pageEditorSelectionText = document.getElementById("pageEditorSelectionText");
+const pageEditorFeedbackText = document.getElementById("pageEditorFeedbackText");
+const pageEditorUnsavedText = document.getElementById("pageEditorUnsavedText");
+const pageEditorGrid = document.getElementById("pageEditorGrid");
+const pageEditorApplyButton = document.getElementById("pageEditorApplyButton");
 const bookmarksList = document.getElementById("bookmarksList");
 const bookmarksEmpty = document.getElementById("bookmarksEmpty");
 const aboutVersionText = document.getElementById("aboutVersionText");
@@ -70,9 +83,19 @@ const state = {
   sourceName: "sample.pdf",
   currentPdfBlob: null,
   feedbackTimer: 0,
+  pageEditorFeedbackTimer: 0,
   bookmarks: [],
   sessionKind: "url",
   sessionPersisted: false,
+  pageEditorPages: [],
+  pageEditorDragIndex: -1,
+  pageEditorDropIndex: -1,
+  pageEditorDropPosition: "before",
+  pageEditorOriginalPageNumbers: [],
+  pageEditorLastSelectedIndex: -1,
+  pageEditorDragIndexes: [],
+  pageEditorHistory: [],
+  pageEditorFuture: [],
 };
 
 const BOOKMARK_STORAGE_KEY = "flippy-bookmarks-v1";
@@ -125,6 +148,7 @@ function syncBuilderToolsMode() {
   builderSection.style.display = isReadOnly ? "none" : "";
   builderSection.setAttribute("aria-hidden", String(isReadOnly));
   uploadButton.hidden = !OPTIONS.builderTools;
+  editPagesButton.hidden = !OPTIONS.builderTools;
   downloadAppLink.hidden = !OPTIONS.builderTools;
   resetAllButton.hidden = !OPTIONS.builderTools;
 }
@@ -139,6 +163,7 @@ function bindEvents() {
 
     fileInput.click();
   });
+  editPagesButton.addEventListener("click", openPageEditor);
   shareButton.addEventListener("click", handleShare);
   downloadAppLink.addEventListener("click", handleDownloadAppZip);
   resetAllButton.addEventListener("click", handleResetAll);
@@ -157,6 +182,25 @@ function bindEvents() {
 
   if (OPTIONS.keyboardNavigation) {
     window.addEventListener("keydown", (event) => {
+      if (event.key === "Escape" && !pageEditorDialog.classList.contains("hidden")) {
+        closePageEditor();
+        return;
+      }
+
+      if (
+        !pageEditorDialog.classList.contains("hidden") &&
+        (event.key === "Delete" || event.key === "Backspace")
+      ) {
+        const activeTagName = document.activeElement?.tagName;
+        if (activeTagName === "INPUT" || activeTagName === "TEXTAREA") {
+          return;
+        }
+
+        event.preventDefault();
+        deleteSelectedPageEditorPages();
+        return;
+      }
+
       if (event.key === "ArrowLeft") goTo(state.spreadIndex - 1);
       if (event.key === "ArrowRight") goTo(state.spreadIndex + 1);
     });
@@ -179,6 +223,27 @@ function bindEvents() {
   fileInput.addEventListener("change", handleFileSelect);
   document.addEventListener("click", handleDocumentClick);
   bookmarksList.addEventListener("click", handleBookmarkListClick);
+  pageEditorCloseButton.addEventListener("click", closePageEditor);
+  pageEditorUndoButton.addEventListener("click", undoPageEditorChange);
+  pageEditorRedoButton.addEventListener("click", redoPageEditorChange);
+  pageEditorSelectAllButton.addEventListener("click", selectAllPageEditorPages);
+  pageEditorDeselectAllButton.addEventListener("click", deselectAllPageEditorPages);
+  pageEditorDeleteSelectedButton.addEventListener("click", (event) => {
+    event.preventDefault();
+    event.stopPropagation();
+    deleteSelectedPageEditorPages();
+  });
+  pageEditorApplyButton.addEventListener("click", applyPageEditorChanges);
+  pageEditorGrid.addEventListener("click", handlePageEditorGridClick);
+  pageEditorGrid.addEventListener("dragstart", handlePageEditorDragStart);
+  pageEditorGrid.addEventListener("dragover", handlePageEditorDragOver);
+  pageEditorGrid.addEventListener("drop", handlePageEditorDrop);
+  pageEditorGrid.addEventListener("dragend", handlePageEditorDragEnd);
+  pageEditorDialog.addEventListener("click", (event) => {
+    if (event.target === pageEditorDialog) {
+      closePageEditor();
+    }
+  });
 }
 
 function goTo(targetSpread) {
@@ -505,6 +570,430 @@ async function handleFileSelect(event) {
   }
 }
 
+function openPageEditor() {
+  if (!OPTIONS.builderTools || !state.pageCanvases.length || !state.currentPdfBlob) {
+    return;
+  }
+
+  state.pageEditorPages = state.pageCanvases.map((canvas, index) => ({
+    pageNumber: index + 1,
+    selected: false,
+  }));
+  state.pageEditorDragIndex = -1;
+  state.pageEditorDropIndex = -1;
+  state.pageEditorDropPosition = "before";
+  state.pageEditorOriginalPageNumbers = state.pageEditorPages.map((page) => page.pageNumber);
+  state.pageEditorLastSelectedIndex = -1;
+  state.pageEditorDragIndexes = [];
+  state.pageEditorHistory = [];
+  state.pageEditorFuture = [];
+  renderPageEditorGrid();
+  pageEditorDialog.classList.remove("hidden");
+  pageEditorDialog.setAttribute("aria-hidden", "false");
+}
+
+function closePageEditor() {
+  pageEditorDialog.classList.add("hidden");
+  pageEditorDialog.setAttribute("aria-hidden", "true");
+  state.pageEditorPages = [];
+  state.pageEditorDragIndex = -1;
+  state.pageEditorDropIndex = -1;
+  state.pageEditorDropPosition = "before";
+  state.pageEditorOriginalPageNumbers = [];
+  state.pageEditorLastSelectedIndex = -1;
+  state.pageEditorDragIndexes = [];
+  state.pageEditorHistory = [];
+  state.pageEditorFuture = [];
+  pageEditorGrid.replaceChildren();
+  setPageEditorFeedback("");
+}
+
+function renderPageEditorGrid() {
+  pageEditorGrid.replaceChildren();
+
+  for (const [index, pageEntry] of state.pageEditorPages.entries()) {
+    const tile = document.createElement("div");
+    tile.className = "page-editor-tile";
+    tile.draggable = true;
+    tile.dataset.pageEditorIndex = String(index);
+    tile.classList.toggle("is-selected", pageEntry.selected);
+    tile.classList.toggle("is-dragging", state.pageEditorDragIndexes.includes(index));
+    tile.classList.toggle(
+      "is-drop-before",
+      index === state.pageEditorDropIndex && state.pageEditorDropPosition === "before"
+    );
+    tile.classList.toggle(
+      "is-drop-after",
+      index === state.pageEditorDropIndex && state.pageEditorDropPosition === "after"
+    );
+
+    const top = document.createElement("div");
+    top.className = "page-editor-tile-top";
+
+    const label = document.createElement("p");
+    label.className = "page-editor-label";
+    label.textContent = `Page ${pageEntry.pageNumber}`;
+    top.append(label);
+
+    const thumb = document.createElement("div");
+    thumb.className = "page-editor-thumb";
+    const sourceCanvas = state.pageCanvases[pageEntry.pageNumber - 1];
+    if (sourceCanvas) {
+      const canvasClone = sourceCanvas.cloneNode(false);
+      canvasClone.getContext("2d").drawImage(sourceCanvas, 0, 0);
+      thumb.append(canvasClone);
+    }
+
+    tile.append(top, thumb);
+    pageEditorGrid.append(tile);
+  }
+
+  syncPageEditorSelectionText();
+  syncPageEditorActionState();
+}
+
+function syncPageEditorSelectionText() {
+  const selectedCount = state.pageEditorPages.filter((page) => page.selected).length;
+  pageEditorSelectionText.textContent = `${selectedCount} selected / ${state.pageEditorPages.length} pages`;
+}
+
+function syncPageEditorActionState() {
+  const selectedCount = state.pageEditorPages.filter((page) => page.selected).length;
+  const currentPageNumbers = state.pageEditorPages.map((page) => page.pageNumber);
+  const hasStructureChange =
+    currentPageNumbers.length !== state.pageEditorOriginalPageNumbers.length ||
+    currentPageNumbers.some((pageNumber, index) => pageNumber !== state.pageEditorOriginalPageNumbers[index]);
+  const unsavedChangeCount = state.pageEditorHistory.length;
+
+  pageEditorUndoButton.disabled = state.pageEditorHistory.length === 0;
+  pageEditorRedoButton.disabled = state.pageEditorFuture.length === 0;
+  pageEditorSelectAllButton.disabled = selectedCount === state.pageEditorPages.length;
+  pageEditorDeselectAllButton.disabled = selectedCount === 0;
+  pageEditorDeleteSelectedButton.disabled = selectedCount === 0;
+  pageEditorApplyButton.disabled = !hasStructureChange;
+  pageEditorUnsavedText.classList.add("hidden");
+  pageEditorApplyButton.textContent = hasStructureChange
+    ? `Apply Changes (${Math.max(1, unsavedChangeCount)})`
+    : "Apply Changes";
+}
+
+function snapshotPageEditorPages() {
+  return state.pageEditorPages.map((page) => ({
+    pageNumber: page.pageNumber,
+    selected: page.selected,
+  }));
+}
+
+function restorePageEditorSnapshot(snapshot) {
+  state.pageEditorPages = snapshot.map((page) => ({
+    pageNumber: page.pageNumber,
+    selected: page.selected,
+  }));
+  state.pageEditorDragIndex = -1;
+  state.pageEditorDragIndexes = [];
+  state.pageEditorDropIndex = -1;
+  state.pageEditorDropPosition = "before";
+  state.pageEditorLastSelectedIndex = state.pageEditorPages.findIndex((page) => page.selected);
+  renderPageEditorGrid();
+}
+
+function pushPageEditorHistory() {
+  state.pageEditorHistory.push(snapshotPageEditorPages());
+  if (state.pageEditorHistory.length > 100) {
+    state.pageEditorHistory.shift();
+  }
+  state.pageEditorFuture = [];
+}
+
+function undoPageEditorChange() {
+  if (state.pageEditorHistory.length === 0) {
+    return;
+  }
+
+  state.pageEditorFuture.push(snapshotPageEditorPages());
+  const previousSnapshot = state.pageEditorHistory.pop();
+  restorePageEditorSnapshot(previousSnapshot);
+}
+
+function redoPageEditorChange() {
+  if (state.pageEditorFuture.length === 0) {
+    return;
+  }
+
+  state.pageEditorHistory.push(snapshotPageEditorPages());
+  const nextSnapshot = state.pageEditorFuture.pop();
+  restorePageEditorSnapshot(nextSnapshot);
+}
+
+function handlePageEditorGridClick(event) {
+  const tile = event.target.closest(".page-editor-tile");
+  if (!tile || !pageEditorGrid.contains(tile)) {
+    return;
+  }
+
+  const index = Number(tile.dataset.pageEditorIndex);
+  if (!Number.isInteger(index) || !state.pageEditorPages[index]) {
+    return;
+  }
+
+  if (event.shiftKey && state.pageEditorLastSelectedIndex >= 0) {
+    const start = Math.min(state.pageEditorLastSelectedIndex, index);
+    const end = Math.max(state.pageEditorLastSelectedIndex, index);
+    const shouldSelect = state.pageEditorPages[state.pageEditorLastSelectedIndex]?.selected ?? true;
+
+    for (let pageIndex = start; pageIndex <= end; pageIndex += 1) {
+      state.pageEditorPages[pageIndex].selected = shouldSelect;
+    }
+  } else if (event.ctrlKey || event.metaKey) {
+    state.pageEditorPages[index].selected = !state.pageEditorPages[index].selected;
+    state.pageEditorLastSelectedIndex = index;
+  } else {
+    const alreadyOnlySelected =
+      state.pageEditorPages[index].selected &&
+      state.pageEditorPages.filter((page) => page.selected).length === 1;
+
+    for (const page of state.pageEditorPages) {
+      page.selected = false;
+    }
+
+    state.pageEditorPages[index].selected = !alreadyOnlySelected;
+    state.pageEditorLastSelectedIndex = index;
+  }
+
+  if (event.shiftKey && state.pageEditorLastSelectedIndex < 0) {
+    state.pageEditorLastSelectedIndex = index;
+  }
+
+  renderPageEditorGrid();
+}
+
+function handlePageEditorDragStart(event) {
+  const tile = event.target.closest(".page-editor-tile");
+  if (!tile) {
+    return;
+  }
+
+  state.pageEditorDragIndex = Number(tile.dataset.pageEditorIndex);
+  if (!Number.isInteger(state.pageEditorDragIndex)) {
+    state.pageEditorDragIndex = -1;
+    state.pageEditorDragIndexes = [];
+    return;
+  }
+
+  const selectedIndexes = state.pageEditorPages
+    .map((page, index) => (page.selected ? index : -1))
+    .filter((index) => index >= 0);
+  state.pageEditorDragIndexes =
+    state.pageEditorPages[state.pageEditorDragIndex]?.selected && selectedIndexes.length > 0
+      ? selectedIndexes
+      : [state.pageEditorDragIndex];
+
+  pageEditorGrid
+    .querySelectorAll(".page-editor-tile")
+    .forEach((pageTile) => {
+      const tileIndex = Number(pageTile.dataset.pageEditorIndex);
+      pageTile.classList.toggle("is-dragging", state.pageEditorDragIndexes.includes(tileIndex));
+    });
+
+  if (event.dataTransfer) {
+    event.dataTransfer.effectAllowed = "move";
+    event.dataTransfer.setData("text/plain", tile.dataset.pageEditorIndex);
+  }
+}
+
+function handlePageEditorDragOver(event) {
+  const tile = event.target.closest(".page-editor-tile");
+  if (!tile || state.pageEditorDragIndex < 0) {
+    return;
+  }
+
+  event.preventDefault();
+  const tileRect = tile.getBoundingClientRect();
+  const targetIndex = Number(tile.dataset.pageEditorIndex);
+  const nextDropPosition =
+    event.clientX < tileRect.left + tileRect.width / 2 ? "before" : "after";
+
+  if (
+    targetIndex !== state.pageEditorDropIndex ||
+    nextDropPosition !== state.pageEditorDropPosition
+  ) {
+    state.pageEditorDropIndex = targetIndex;
+    state.pageEditorDropPosition = nextDropPosition;
+    renderPageEditorGrid();
+  }
+
+  if (event.dataTransfer) {
+    event.dataTransfer.dropEffect = "move";
+  }
+}
+
+function handlePageEditorDrop(event) {
+  const tile = event.target.closest(".page-editor-tile");
+  if (!tile || state.pageEditorDragIndex < 0) {
+    return;
+  }
+
+  event.preventDefault();
+  const targetIndex = Number(tile.dataset.pageEditorIndex);
+  if (!Number.isInteger(targetIndex)) {
+    return;
+  }
+
+  const dragIndexes = state.pageEditorDragIndexes.length
+    ? [...state.pageEditorDragIndexes].sort((left, right) => left - right)
+    : [state.pageEditorDragIndex];
+  const targetIsInsideDraggedGroup = dragIndexes.includes(targetIndex);
+  if (targetIsInsideDraggedGroup) {
+    state.pageEditorDragIndex = -1;
+    state.pageEditorDragIndexes = [];
+    state.pageEditorDropIndex = -1;
+    state.pageEditorDropPosition = "before";
+    renderPageEditorGrid();
+    return;
+  }
+
+  pushPageEditorHistory();
+  const reorderedPages = [...state.pageEditorPages];
+  let insertIndex = targetIndex;
+
+  if (state.pageEditorDropPosition === "after") {
+    insertIndex += 1;
+  }
+
+  const movedPages = dragIndexes.map((index) => reorderedPages[index]);
+  const pagesToKeep = reorderedPages.filter((_, index) => !dragIndexes.includes(index));
+  const removedBeforeInsert = dragIndexes.filter((index) => index < insertIndex).length;
+  insertIndex -= removedBeforeInsert;
+
+  pagesToKeep.splice(insertIndex, 0, ...movedPages);
+  state.pageEditorPages = pagesToKeep;
+  state.pageEditorDragIndex = insertIndex;
+  state.pageEditorDragIndexes = [];
+  state.pageEditorDropIndex = -1;
+  state.pageEditorDropPosition = "before";
+  renderPageEditorGrid();
+}
+
+function handlePageEditorDragEnd() {
+  state.pageEditorDragIndex = -1;
+  state.pageEditorDragIndexes = [];
+  state.pageEditorDropIndex = -1;
+  state.pageEditorDropPosition = "before";
+  renderPageEditorGrid();
+}
+
+function deleteSelectedPageEditorPages() {
+  const selectedIndexes = state.pageEditorPages
+    .map((page, index) => (page.selected ? index : -1))
+    .filter((index) => index >= 0);
+  const remainingPages = state.pageEditorPages.filter((page) => !page.selected);
+  if (remainingPages.length === state.pageEditorPages.length) {
+    setPageEditorFeedback("Select page(s) to delete.");
+    return;
+  }
+
+  if (remainingPages.length === 0) {
+    setPageEditorFeedback("Keep at least one page.");
+    return;
+  }
+
+  pushPageEditorHistory();
+  state.pageEditorPages = remainingPages.map((page) => ({
+    ...page,
+    selected: false,
+  }));
+  const nextSelectionIndex = Math.min(selectedIndexes[0] || 0, state.pageEditorPages.length - 1);
+  if (state.pageEditorPages[nextSelectionIndex]) {
+    state.pageEditorPages[nextSelectionIndex].selected = true;
+    state.pageEditorLastSelectedIndex = nextSelectionIndex;
+  } else {
+    state.pageEditorLastSelectedIndex = -1;
+  }
+  state.pageEditorDragIndex = -1;
+  state.pageEditorDragIndexes = [];
+  state.pageEditorDropIndex = -1;
+  state.pageEditorDropPosition = "before";
+  setPageEditorFeedback("Selected pages removed.");
+  renderPageEditorGrid();
+}
+
+function selectAllPageEditorPages() {
+  for (const page of state.pageEditorPages) {
+    page.selected = true;
+  }
+
+  state.pageEditorLastSelectedIndex = state.pageEditorPages.length - 1;
+  renderPageEditorGrid();
+}
+
+function deselectAllPageEditorPages() {
+  for (const page of state.pageEditorPages) {
+    page.selected = false;
+  }
+
+  state.pageEditorLastSelectedIndex = -1;
+  renderPageEditorGrid();
+}
+
+function setPageEditorFeedback(message) {
+  window.clearTimeout(state.pageEditorFeedbackTimer);
+  pageEditorFeedbackText.textContent = message;
+
+  if (!message) {
+    return;
+  }
+
+  state.pageEditorFeedbackTimer = window.setTimeout(() => {
+    pageEditorFeedbackText.textContent = "";
+  }, 2200);
+}
+
+async function applyPageEditorChanges() {
+  if (!state.currentPdfBlob || !state.pageEditorPages.length) {
+    return;
+  }
+
+  try {
+    pageEditorApplyButton.disabled = true;
+    pageEditorDeleteSelectedButton.disabled = true;
+
+    const sourceBytes = await state.currentPdfBlob.arrayBuffer();
+    const sourcePdf = await window.PDFLib.PDFDocument.load(sourceBytes);
+    const nextPdf = await window.PDFLib.PDFDocument.create();
+    const sourcePageIndexes = state.pageEditorPages.map((page) => page.pageNumber - 1);
+    const copiedPages = await nextPdf.copyPages(sourcePdf, sourcePageIndexes);
+
+    for (const copiedPage of copiedPages) {
+      nextPdf.addPage(copiedPage);
+    }
+
+    const nextBytes = await nextPdf.save();
+    const nextFile = new File([nextBytes], createEditedPdfFilename(state.sourceName), {
+      type: "application/pdf",
+      lastModified: Date.now(),
+    });
+
+    closePageEditor();
+    await loadPdfFromFile(nextFile);
+    setPanelFeedback("Pages updated.");
+  } catch (error) {
+    console.error(error);
+    setPanelFeedback("Could not apply page edits.");
+  } finally {
+    pageEditorApplyButton.disabled = false;
+    pageEditorDeleteSelectedButton.disabled = false;
+  }
+}
+
+function createEditedPdfFilename(filename) {
+  const normalizedName = String(filename || "document.pdf");
+  if (/\.pdf$/i.test(normalizedName)) {
+    return normalizedName.replace(/\.pdf$/i, "-edited.pdf");
+  }
+
+  return `${normalizedName}-edited.pdf`;
+}
+
 function hasPdf(dataTransfer) {
   if (!dataTransfer) {
     return false;
@@ -644,7 +1133,7 @@ function updateDownloadLink(href, filename) {
 }
 
 function handleDocumentClick(event) {
-  if (!choiceDialog.classList.contains("hidden")) {
+  if (!choiceDialog.classList.contains("hidden") || !pageEditorDialog.classList.contains("hidden")) {
     return;
   }
 

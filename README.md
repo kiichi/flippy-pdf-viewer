@@ -1,8 +1,10 @@
 # Flippy
 
-Flippy is a lightweight PDF flipbook viewer for the web. It renders PDF pages into a two-page book layout, adds a page-turn animation, and includes sharing, embedding, fullscreen reading, drag-and-drop uploads, and one-click package export.
+Flippy is a lightweight PDF flipbook viewer for the web. It renders PDF pages into a two-page book layout, adds a page-turn animation, and includes sharing, embedding, bookmarks, page editing, fullscreen reading, drag-and-drop uploads, and export tools.
 
 Live demo: https://kiichi.github.io/flippy-pdf-viewer/
+
+Version: `v0.2.0`
 
 ## Features
 
@@ -14,14 +16,19 @@ Live demo: https://kiichi.github.io/flippy-pdf-viewer/
 - Keyboard navigation with left and right arrow keys
 - Slider to jump between spreads
 - Bookmark the current spread
+- Rename bookmarks and add short bookmark notes
+- Resume the last opened spread when reopening the same PDF
 - Fullscreen reading mode
 - Auto-hiding controls in fullscreen
 - Open a local PDF from the side panel
 - Drag and drop a PDF directly onto the app
+- Edit pages in a thumbnail grid with reordering, delete, undo, and redo
 - Download the currently loaded PDF
 - Native share support when available
 - Copyable iframe embed code
-- "Download Entire Package" export as a self-contained zip
+- `Single File (HTML)` export
+- `Project Folder (Zip)` export
+- Optional bookmark inclusion during export
 - Optional read-only mode that hides builder tools and disables drag-and-drop uploads
 - Responsive layout for desktop and mobile
 - Embedded mode detection for iframe usage
@@ -43,6 +50,7 @@ Uploading a PDF in Flippy does not upload it to a server. The file stays in your
 Use the `Create Your Own Flipbook` section in the side panel to:
 
 - Open a different PDF
+- Reorder or delete pages with `Edit Pages`
 - Download the entire app package
 - Reset saved local state
 
@@ -55,7 +63,32 @@ Use the `Create Your Own Flipbook` section in the side panel to:
 
 ### Bookmarks
 
-Click the bookmark button next to fullscreen to save the current spread. Saved bookmarks appear in the side panel, where you can jump back to them or remove them later.
+Click the bookmark button next to fullscreen to save the current spread. Saved bookmarks appear in the side panel, where you can:
+
+- Jump back to a saved spread
+- Edit the bookmark name
+- Add a short note below the bookmark title
+- Remove the bookmark later
+
+Flippy also remembers bookmarks for the same PDF source and restores them when that PDF is reopened.
+
+### Edit Pages
+
+Use `Edit Pages` in the builder section to open a page editor with thumbnails.
+
+Inside the editor you can:
+
+- Drag pages to reorder them
+- Select one or many pages
+- Delete selected pages
+- Use `Undo` and `Redo` before applying changes
+
+Selection supports:
+
+- Click to select a page
+- `Shift` + click to select a range
+- `Ctrl` + click or `Cmd` + click to toggle pages
+- `Delete` or `Backspace` to remove selected pages
 
 ### Fullscreen
 
@@ -72,12 +105,13 @@ From the side panel, you can:
 
 Use the `Share` button to:
 
+- Copy the current page URL
 - Open the native browser share sheet when supported
-- Fall back to copying the current page URL when native sharing is unavailable
+- Copy an iframe embed snippet that uses the embed URL
 
 ### Embed
 
-The side panel includes a ready-to-copy iframe snippet so you can embed the viewer in another page.
+The share dialog includes a ready-to-copy iframe snippet so you can embed the viewer in another page.
 
 Example:
 
@@ -138,14 +172,21 @@ Then open:
 http://localhost:8000
 ```
 
-## Download Entire Package
+## Export
 
-`Download Entire Package` asks whether the exported app should be `full` or `readonly`.
+`Download Entire Package` opens an export dialog with:
 
-- `full`: keeps upload tools, drag and drop, reset, and package export available
-- `readonly`: hides the builder section and disables uploads and drag and drop
+- `Single File (HTML)`
+- `Project Folder (Zip)`
+- `Read-Only` or `Full Features`
+- Optional `Include bookmarks`
 
-Then it creates a zip that includes:
+Export modes:
+
+- `Full Features`: keeps upload tools, drag and drop, reset, and page editing available
+- `Read-Only`: hides the builder section and disables uploads, drag and drop, and editing tools
+
+The zip export includes:
 
 - `README.md`
 - `index.html`
@@ -153,7 +194,9 @@ Then it creates a zip that includes:
 - `styles.css`
 - The currently loaded PDF
 
-When the packaged zip is created, Flippy rewrites the default PDF path inside `app.js` so the exported app opens that PDF immediately. That package is ready to upload to your own website and share with others.
+When a package is created, Flippy rewrites the default PDF path inside `app.js` so the exported app opens that PDF immediately. The single-file export inlines the app and the current PDF into one HTML file.
+
+Both export formats are ready to share on your own website.
 
 ## Create And Publish Your Own Flip Book
 
@@ -199,6 +242,7 @@ Both libraries are loaded from CDN, so there is no build step required.
 - The default document is loaded with `fetch`, so local server hosting is recommended
 - Sharing and clipboard behavior depend on browser support
 - Fullscreen behavior may vary slightly across browsers
+- Large local PDFs may only be remembered temporarily depending on browser storage limits
 
 ## Project Structure
 
