@@ -712,6 +712,10 @@ select {
 .choice-dialog-card {
   position: relative;
   width: min(100%, 360px);
+  max-width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 0;
   padding: 16px;
   background: #ffffff;
   border: 1px solid #1f2937;
@@ -794,6 +798,7 @@ select {
   flex-direction: column;
   gap: 10px;
   margin-top: 12px;
+  min-height: 0;
 }
 
 .choice-dialog-content.hidden {
@@ -1011,6 +1016,7 @@ button:disabled:hover {
 
 #spreadSlider {
   flex: 1;
+  min-width: 0;
   accent-color: #374151;
 }
 
@@ -1110,13 +1116,17 @@ button:disabled:hover {
   }
 
   .controls-row {
-    flex-wrap: wrap;
+    flex-wrap: nowrap;
+    gap: 6px;
   }
 
   .status {
-    width: 100%;
+    width: auto;
     margin-left: 0;
-    text-align: left;
+    min-width: max-content;
+    white-space: nowrap;
+    text-align: right;
+    font-size: 0.74rem;
   }
 
   .controls {
@@ -1124,11 +1134,49 @@ button:disabled:hover {
   }
 
   .side-panel {
+    position: fixed;
     top: 0;
     left: 0;
     bottom: 0;
-    width: min(78vw, 280px);
+    width: min(84vw, 320px);
+    height: 100dvh;
+    padding-top: max(14px, env(safe-area-inset-top));
+    padding-bottom: max(14px, env(safe-area-inset-bottom));
     border-right: 1px solid var(--line);
+    box-shadow: 0 10px 30px rgba(17, 24, 39, 0.12);
+  }
+
+  .choice-dialog,
+  .page-editor-dialog {
+    position: fixed;
+    inset: 0;
+    width: 100vw;
+    height: 100dvh;
+    padding: 10px;
+  }
+
+  .choice-dialog-card {
+    width: min(100%, 420px);
+    max-height: calc(100dvh - 20px);
+    overflow: auto;
+    padding: 14px;
+  }
+
+  .choice-dialog-share-row {
+    flex-wrap: nowrap;
+  }
+
+  .choice-dialog-share-row button {
+    flex: 0 0 auto;
+  }
+
+  .choice-dialog-embed-code {
+    min-height: 72px;
+  }
+
+  .page-editor-card {
+    width: min(100%, 100%);
+    max-height: calc(100dvh - 20px);
   }
 
   .app:fullscreen .controls {

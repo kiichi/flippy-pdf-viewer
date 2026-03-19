@@ -1,6 +1,6 @@
 # Flippy
 
-Flippy is a lightweight PDF flipbook viewer for the web. It renders PDF pages into a two-page book layout, adds a page-turn animation, and includes sharing, embedding, bookmarks, page editing, fullscreen reading, drag-and-drop uploads, and export tools.
+Flippy is a lightweight PDF flipbook viewer and builder for the web. It renders PDF pages into a two-page book layout, adds a page-turn animation, and lets you open your own PDF, edit page order, remove pages, add bookmarks, and re-export the result as a shareable package or single HTML file.
 
 Live demo: https://kiichi.github.io/flippy-pdf-viewer/
 
