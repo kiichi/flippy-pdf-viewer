@@ -17,6 +17,7 @@ const OPTIONS = {
 
 const APP_VERSION = "v0.2.0";
 const MAX_PERSISTED_PDF_BYTES = 25 * 1024 * 1024;
+const PUBLIC_EMBED_BASE_URL = "https://kiichi.github.io/flip-book-pdf/";
 
 const app = document.getElementById("app");
 const fileInput = document.getElementById("fileInput");
@@ -2313,23 +2314,15 @@ function showBuilderPublishInfo() {
 
         const step2 = document.createElement("p");
         step2.className = "choice-dialog-message";
-        step2.textContent = "2. Paste your viewer URL and the Squarespace PDF URL below.";
+        step2.textContent = "2. Paste the PDF URL below to generate the script code.";
 
         const step3 = document.createElement("p");
         step3.className = "choice-dialog-message";
-        step3.textContent = "3. Copy the generated iframe code into a Squarespace Code Block.";
+        step3.textContent = "3. Copy the generated script code.";
 
-        const viewerField = document.createElement("label");
-        viewerField.className = "choice-dialog-field";
-        const viewerLabel = document.createElement("span");
-        viewerLabel.className = "choice-dialog-field-label";
-        viewerLabel.textContent = "Viewer URL";
-        const viewerInput = document.createElement("input");
-        viewerInput.className = "choice-dialog-input";
-        viewerInput.type = "text";
-        viewerInput.value = getShareUrl();
-        viewerInput.placeholder = "https://kiichi.github.io/flip-book-pdf";
-        viewerField.append(viewerLabel, viewerInput);
+        const step4 = document.createElement("p");
+        step4.className = "choice-dialog-message";
+        step4.textContent = "4. Paste that script code into a Squarespace Embed Block or Code Block.";
 
         const pdfField = document.createElement("label");
         pdfField.className = "choice-dialog-field";
@@ -2342,59 +2335,34 @@ function showBuilderPublishInfo() {
         pdfInput.placeholder = "https://example.com/your-file.pdf";
         pdfField.append(pdfLabel, pdfInput);
 
-        const codeLabel = document.createElement("p");
-        codeLabel.className = "choice-dialog-embed-label";
-        codeLabel.textContent = "Squarespace Iframe Code";
+        const linkCodeLabel = document.createElement("p");
+        linkCodeLabel.className = "choice-dialog-embed-label";
+        linkCodeLabel.textContent = "Squarespace Embed Snippet";
 
-        const codeOutput = document.createElement("textarea");
-        codeOutput.className = "choice-dialog-embed-code";
-        codeOutput.readOnly = true;
-
-        const scriptCodeLabel = document.createElement("p");
-        scriptCodeLabel.className = "choice-dialog-embed-label";
-        scriptCodeLabel.textContent = "Squarespace Script Embed";
-
-        const scriptCodeOutput = document.createElement("textarea");
-        scriptCodeOutput.className = "choice-dialog-embed-code";
-        scriptCodeOutput.readOnly = true;
+        const linkCodeOutput = document.createElement("textarea");
+        linkCodeOutput.className = "choice-dialog-embed-code";
+        linkCodeOutput.readOnly = true;
 
         const updateCode = () => {
-          codeOutput.value = getSquarespaceEmbedCode(viewerInput.value, pdfInput.value);
-          scriptCodeOutput.value = getSquarespaceScriptEmbedCode(viewerInput.value, pdfInput.value);
+          linkCodeOutput.value = getSquarespaceLinkEmbedCode(pdfInput.value);
         };
 
         updateCode();
-        viewerInput.addEventListener("input", updateCode);
         pdfInput.addEventListener("input", updateCode);
 
-        const copyButton = document.createElement("button");
-        copyButton.type = "button";
-        copyButton.textContent = "Copy Iframe Code";
-        copyButton.addEventListener("click", async () => {
-          const copied = await copyText(codeOutput.value);
+        const copyLinkButton = document.createElement("button");
+        copyLinkButton.type = "button";
+        copyLinkButton.textContent = "Copy Embed Snippet";
+        copyLinkButton.addEventListener("click", async () => {
+          const copied = await copyText(linkCodeOutput.value);
           if (copied) {
-            setPanelFeedback("Squarespace iframe code copied.");
+            setPanelFeedback("Squarespace embed snippet copied.");
             return;
           }
 
-          codeOutput.focus();
-          codeOutput.select();
-          setPanelFeedback("Copy failed. Embed code selected instead.");
-        });
-
-        const copyScriptButton = document.createElement("button");
-        copyScriptButton.type = "button";
-        copyScriptButton.textContent = "Copy Script Embed";
-        copyScriptButton.addEventListener("click", async () => {
-          const copied = await copyText(scriptCodeOutput.value);
-          if (copied) {
-            setPanelFeedback("Squarespace script embed copied.");
-            return;
-          }
-
-          scriptCodeOutput.focus();
-          scriptCodeOutput.select();
-          setPanelFeedback("Copy failed. Script embed selected instead.");
+          linkCodeOutput.focus();
+          linkCodeOutput.select();
+          setPanelFeedback("Copy failed. Link embed selected instead.");
         });
 
         const note = document.createElement("p");
@@ -2406,14 +2374,11 @@ function showBuilderPublishInfo() {
           step1,
           step2,
           step3,
-          viewerField,
+          step4,
           pdfField,
-          codeLabel,
-          codeOutput,
-          scriptCodeLabel,
-          scriptCodeOutput,
-          copyButton,
-          copyScriptButton,
+          linkCodeLabel,
+          linkCodeOutput,
+          copyLinkButton,
           note
         );
       };
@@ -2574,33 +2539,18 @@ function getEmbedCode(embedUrl = getEmbedUrl()) {
   )}" width="960" height="640" style="border:0;" loading="lazy" allow="fullscreen"></iframe>`;
 }
 
-function getSquarespaceEmbedCode(viewerUrl, pdfUrl) {
-  const normalizedViewerUrl = normalizeViewerUrl(viewerUrl);
+function getSquarespaceLinkEmbedCode(pdfUrl) {
+  const normalizedViewerUrl = PUBLIC_EMBED_BASE_URL;
   const normalizedPdfUrl = String(pdfUrl || "").trim();
-  const embedUrl = new URL(normalizedViewerUrl || getShareUrl());
-
-  if (normalizedPdfUrl) {
-    embedUrl.searchParams.set("pdf", normalizedPdfUrl);
-  }
-
-  return `<iframe src="${escapeAttribute(
-    embedUrl.toString()
-  )}" width="100%" height="800" style="border:0;" loading="lazy" allow="fullscreen"></iframe>`;
-}
-
-function getSquarespaceScriptEmbedCode(viewerUrl, pdfUrl) {
-  const normalizedViewerUrl = normalizeViewerUrl(viewerUrl);
-  const normalizedPdfUrl = String(pdfUrl || "").trim();
-  const embedScriptUrl = getEmbedScriptUrl(normalizedViewerUrl || getShareUrl());
+  const embedScriptUrl = getEmbedScriptUrl(normalizedViewerUrl);
   embedScriptUrl.search = "";
   embedScriptUrl.hash = "";
 
-  return `<div data-flippy-embed data-pdf="${escapeAttribute(
-    normalizedPdfUrl
-  )}" data-height="800"></div>
-<script src="${escapeAttribute(embedScriptUrl.toString())}" data-viewer="${escapeAttribute(
-    normalizedViewerUrl
-  )}"><\/script>`;
+  if (normalizedPdfUrl) {
+    embedScriptUrl.searchParams.set("pdf", normalizedPdfUrl);
+  }
+
+  return `<script src="${escapeAttribute(embedScriptUrl.toString())}"><\/script>`;
 }
 
 function getShareUrl() {
@@ -2625,11 +2575,6 @@ function getPdfPath() {
   const url = new URL(window.location.href);
   const pdfParam = url.searchParams.get("pdf");
   return pdfParam ? pdfParam.trim() : "./sample.pdf";
-}
-
-function normalizeViewerUrl(value) {
-  const normalized = String(value || "").trim();
-  return normalized || getShareUrl();
 }
 
 function getEmbedScriptUrl(viewerUrl) {

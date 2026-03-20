@@ -227,45 +227,39 @@ select {
 }
 
 .side-panel-info-button {
-  flex: 0 0 24px;
-  width: 24px;
-  height: 24px;
-  min-width: 24px;
-  min-height: 24px;
+  flex: 0 0 20px;
+  width: 20px;
+  height: 20px;
+  min-width: 20px;
+  min-height: 20px;
   padding: 0;
-  border: 1px solid #cbd5e1;
+  border: 1px solid #d1d5db;
   border-radius: 999px;
-  background: linear-gradient(180deg, #ffffff 0%, #f3f4f6 100%);
-  color: #475569;
+  background: #ffffff;
+  color: #6b7280;
   display: inline-flex;
   align-items: center;
   justify-content: center;
   align-self: center;
   line-height: 1;
-  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.08);
+  font-size: 0.72rem;
+  font-weight: 700;
   transition:
     background 140ms ease,
     border-color 140ms ease,
     color 140ms ease,
-    transform 140ms ease,
-    box-shadow 140ms ease;
+    transform 140ms ease;
 }
 
 .side-panel-info-button:hover {
   color: var(--ink);
-  border-color: #94a3b8;
-  background: linear-gradient(180deg, #ffffff 0%, #e5e7eb 100%);
-  box-shadow: 0 3px 8px rgba(15, 23, 42, 0.12);
-  transform: translateY(-1px);
+  border-color: #9ca3af;
+  background: #f9fafb;
 }
 
 .side-panel-info-button:focus-visible {
   outline: 2px solid #111827;
   outline-offset: 2px;
-}
-
-.side-panel-info-button svg {
-  display: block;
 }
 
 .bookmarks-empty {

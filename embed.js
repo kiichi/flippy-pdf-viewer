@@ -25,11 +25,8 @@
   const targetId = currentScript.dataset.target || scriptUrl.searchParams.get("target");
   const target =
     (targetId && document.getElementById(targetId)) ||
-    findContainerElement(currentScript);
-
-  if (!target) {
-    return;
-  }
+    findContainerElement(currentScript) ||
+    createContainerAfterScript(currentScript, height);
 
   const iframe = document.createElement("iframe");
   iframe.src = buildEmbedUrl(viewerUrl, pdfUrl);
@@ -79,5 +76,14 @@
     }
 
     return container.dataset[key] || "";
+  }
+
+  function createContainerAfterScript(script, nextHeight) {
+    const container = document.createElement("div");
+    container.setAttribute("data-flippy-embed", "");
+    container.style.width = "100%";
+    container.style.minHeight = `${String(nextHeight || "800").replace(/[^\d.]/g, "") || "800"}px`;
+    script.insertAdjacentElement("afterend", container);
+    return container;
   }
 })();
