@@ -17,8 +17,6 @@ const OPTIONS = {
 
 const APP_VERSION = "v0.2.0";
 const MAX_PERSISTED_PDF_BYTES = 25 * 1024 * 1024;
-const PUBLIC_EMBED_BASE_URL = "https://kiichi.github.io/flip-book-pdf/";
-
 const app = document.getElementById("app");
 const fileInput = document.getElementById("fileInput");
 const dropOverlay = document.getElementById("dropOverlay");
@@ -2293,95 +2291,13 @@ function showBuilderPublishInfo() {
       const intro = document.createElement("p");
       intro.className = "choice-dialog-message";
       intro.textContent =
-        "Use the tabs below for quick publishing help. The Squarespace tab generates iframe code for your hosted viewer from a pasted PDF URL.";
+        "Use the tabs below for quick publishing help.";
 
       const tabRow = document.createElement("div");
       tabRow.className = "choice-dialog-tabs";
 
       const tabPanel = document.createElement("div");
       tabPanel.className = "choice-dialog-tab-panel";
-
-      const renderSquarespaceTab = (button) => {
-        tabPanel.replaceChildren();
-
-        for (const tabButton of tabRow.querySelectorAll(".choice-dialog-tab")) {
-          tabButton.classList.toggle("is-active", tabButton === button);
-        }
-
-        const step1 = document.createElement("p");
-        step1.className = "choice-dialog-message";
-        step1.textContent = "1. Upload your PDF to Squarespace and copy the direct PDF file URL.";
-
-        const step2 = document.createElement("p");
-        step2.className = "choice-dialog-message";
-        step2.textContent = "2. Paste the PDF URL below to generate the script code.";
-
-        const step3 = document.createElement("p");
-        step3.className = "choice-dialog-message";
-        step3.textContent = "3. Copy the generated script code.";
-
-        const step4 = document.createElement("p");
-        step4.className = "choice-dialog-message";
-        step4.textContent = "4. Paste that script code into a Squarespace Embed Block or Code Block.";
-
-        const pdfField = document.createElement("label");
-        pdfField.className = "choice-dialog-field";
-        const pdfLabel = document.createElement("span");
-        pdfLabel.className = "choice-dialog-field-label";
-        pdfLabel.textContent = "PDF URL";
-        const pdfInput = document.createElement("textarea");
-        pdfInput.className = "choice-dialog-input";
-        pdfInput.rows = 3;
-        pdfInput.placeholder = "https://example.com/your-file.pdf";
-        pdfField.append(pdfLabel, pdfInput);
-
-        const linkCodeLabel = document.createElement("p");
-        linkCodeLabel.className = "choice-dialog-embed-label";
-        linkCodeLabel.textContent = "Squarespace Embed Snippet";
-
-        const linkCodeOutput = document.createElement("textarea");
-        linkCodeOutput.className = "choice-dialog-embed-code";
-        linkCodeOutput.readOnly = true;
-
-        const updateCode = () => {
-          linkCodeOutput.value = getSquarespaceLinkEmbedCode(pdfInput.value);
-        };
-
-        updateCode();
-        pdfInput.addEventListener("input", updateCode);
-
-        const copyLinkButton = document.createElement("button");
-        copyLinkButton.type = "button";
-        copyLinkButton.textContent = "Copy Embed Snippet";
-        copyLinkButton.addEventListener("click", async () => {
-          const copied = await copyText(linkCodeOutput.value);
-          if (copied) {
-            setPanelFeedback("Squarespace embed snippet copied.");
-            return;
-          }
-
-          linkCodeOutput.focus();
-          linkCodeOutput.select();
-          setPanelFeedback("Copy failed. Link embed selected instead.");
-        });
-
-        const note = document.createElement("p");
-        note.className = "choice-dialog-message";
-        note.textContent =
-          "Tip: the PDF URL must be a direct public .pdf link. Later, you can swap the viewer URL to another host such as jsDelivr if you move the app there.";
-
-        tabPanel.append(
-          step1,
-          step2,
-          step3,
-          step4,
-          pdfField,
-          linkCodeLabel,
-          linkCodeOutput,
-          copyLinkButton,
-          note
-        );
-      };
 
       const renderGithubPagesTab = (button) => {
         tabPanel.replaceChildren();
@@ -2502,7 +2418,6 @@ function showBuilderPublishInfo() {
       };
 
       const tabs = [
-        { label: "Squarespace", render: renderSquarespaceTab },
         { label: "GitHub Pages", render: renderGithubPagesTab },
         { label: "Netlify", render: renderNetlifyTab },
         { label: "Neocities", render: renderNeocitiesTab },
@@ -2539,20 +2454,6 @@ function getEmbedCode(embedUrl = getEmbedUrl()) {
   )}" width="960" height="640" style="border:0;" loading="lazy" allow="fullscreen"></iframe>`;
 }
 
-function getSquarespaceLinkEmbedCode(pdfUrl) {
-  const normalizedViewerUrl = PUBLIC_EMBED_BASE_URL;
-  const normalizedPdfUrl = String(pdfUrl || "").trim();
-  const embedScriptUrl = getEmbedScriptUrl(normalizedViewerUrl);
-  embedScriptUrl.search = "";
-  embedScriptUrl.hash = "";
-
-  if (normalizedPdfUrl) {
-    embedScriptUrl.searchParams.set("pdf", normalizedPdfUrl);
-  }
-
-  return `<script src="${escapeAttribute(embedScriptUrl.toString())}"><\/script>`;
-}
-
 function getShareUrl() {
   const url = new URL(window.location.href);
   url.searchParams.delete("embed");
@@ -2575,22 +2476,6 @@ function getPdfPath() {
   const url = new URL(window.location.href);
   const pdfParam = url.searchParams.get("pdf");
   return pdfParam ? pdfParam.trim() : "./sample.pdf";
-}
-
-function getEmbedScriptUrl(viewerUrl) {
-  const url = new URL(viewerUrl, window.location.href);
-
-  if (url.pathname.endsWith("/index.html")) {
-    url.pathname = url.pathname.replace(/\/index\.html$/, "/embed.js");
-    return url;
-  }
-
-  if (!url.pathname.endsWith("/")) {
-    url.pathname = `${url.pathname}/`;
-  }
-
-  url.pathname = `${url.pathname}embed.js`;
-  return url;
 }
 
 function setPanelFeedback(message) {
