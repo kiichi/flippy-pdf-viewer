@@ -2299,6 +2299,18 @@ function showBuilderPublishInfo() {
       const tabPanel = document.createElement("div");
       tabPanel.className = "choice-dialog-tab-panel";
 
+      const createServiceLink = (label, href) => {
+        const line = document.createElement("p");
+        line.className = "choice-dialog-message";
+        const anchor = document.createElement("a");
+        anchor.href = href;
+        anchor.target = "_blank";
+        anchor.rel = "noreferrer";
+        anchor.textContent = label;
+        line.append(anchor);
+        return line;
+      };
+
       const renderGithubPagesTab = (button) => {
         tabPanel.replaceChildren();
 
@@ -2321,6 +2333,11 @@ function showBuilderPublishInfo() {
           line.textContent = step;
           tabPanel.append(line);
         }
+
+        tabPanel.append(
+          createServiceLink("Open GitHub", "https://github.com/"),
+          createServiceLink("GitHub Pages Setup Guide", "https://pages.github.com/")
+        );
 
         const note = document.createElement("p");
         note.className = "choice-dialog-message";
@@ -2350,6 +2367,11 @@ function showBuilderPublishInfo() {
           line.textContent = step;
           tabPanel.append(line);
         }
+
+        tabPanel.append(
+          createServiceLink("Open Netlify", "https://app.netlify.com/"),
+          createServiceLink("Netlify Drag-and-Drop Deploy", "https://app.netlify.com/drop")
+        );
 
         const note = document.createElement("p");
         note.className = "choice-dialog-message";
@@ -2381,6 +2403,11 @@ function showBuilderPublishInfo() {
           tabPanel.append(line);
         }
 
+        tabPanel.append(
+          createServiceLink("Open Neocities", "https://neocities.org/"),
+          createServiceLink("Neocities Dashboard", "https://neocities.org/dashboard")
+        );
+
         const note = document.createElement("p");
         note.className = "choice-dialog-message";
         note.textContent =
@@ -2410,6 +2437,12 @@ function showBuilderPublishInfo() {
           tabPanel.append(line);
         }
 
+        tabPanel.append(
+          createServiceLink("Cloudflare Pages", "https://pages.cloudflare.com/"),
+          createServiceLink("Vercel", "https://vercel.com/"),
+          createServiceLink("GitHub Pages", "https://pages.github.com/")
+        );
+
         const note = document.createElement("p");
         note.className = "choice-dialog-message";
         note.textContent =
@@ -2418,9 +2451,9 @@ function showBuilderPublishInfo() {
       };
 
       const tabs = [
-        { label: "GitHub Pages", render: renderGithubPagesTab },
         { label: "Netlify", render: renderNetlifyTab },
         { label: "Neocities", render: renderNeocitiesTab },
+        { label: "GitHub Pages", render: renderGithubPagesTab },
         { label: "Your Hosting", render: renderOwnHostingTab },
       ];
 
