@@ -4,7 +4,7 @@ pdfjsLib.GlobalWorkerOptions.workerSrc =
   "https://cdn.jsdelivr.net/npm/pdfjs-dist@4.10.38/build/pdf.worker.min.mjs";
 
 const OPTIONS = {
-  pdfPath: "./sample.pdf",
+  pdfPath: getPdfPath(),
   builderTools: true,
   renderScale: 1.35,
   keyboardNavigation: true,
@@ -26,6 +26,7 @@ const sidePanel = document.getElementById("sidePanel");
 const sidePanelCloseButton = document.getElementById("sidePanelCloseButton");
 const sidePanelLabel = document.getElementById("sidePanelLabel");
 const builderSection = document.getElementById("builderSection");
+const builderInfoButton = document.getElementById("builderInfoButton");
 const uploadButton = document.getElementById("uploadButton");
 const editPagesButton = document.getElementById("editPagesButton");
 const shareButton = document.getElementById("shareButton");
@@ -163,6 +164,7 @@ function bindEvents() {
 
     fileInput.click();
   });
+  builderInfoButton.addEventListener("click", showBuilderPublishInfo);
   editPagesButton.addEventListener("click", openPageEditor);
   shareButton.addEventListener("click", handleShare);
   downloadAppLink.addEventListener("click", handleDownloadAppZip);
@@ -2280,6 +2282,286 @@ async function handleShare() {
   showShareDialog();
 }
 
+function showBuilderPublishInfo() {
+  showCustomDialog({
+    title: "Publish Your Flipbook",
+    message: "",
+    renderContent: () => {
+      choiceDialogContent.classList.remove("hidden");
+
+      const intro = document.createElement("p");
+      intro.className = "choice-dialog-message";
+      intro.textContent =
+        "Use the tabs below for quick publishing help. The Squarespace tab generates iframe code for your hosted viewer from a pasted PDF URL.";
+
+      const tabRow = document.createElement("div");
+      tabRow.className = "choice-dialog-tabs";
+
+      const tabPanel = document.createElement("div");
+      tabPanel.className = "choice-dialog-tab-panel";
+
+      const renderSquarespaceTab = (button) => {
+        tabPanel.replaceChildren();
+
+        for (const tabButton of tabRow.querySelectorAll(".choice-dialog-tab")) {
+          tabButton.classList.toggle("is-active", tabButton === button);
+        }
+
+        const step1 = document.createElement("p");
+        step1.className = "choice-dialog-message";
+        step1.textContent = "1. Upload your PDF to Squarespace and copy the direct PDF file URL.";
+
+        const step2 = document.createElement("p");
+        step2.className = "choice-dialog-message";
+        step2.textContent = "2. Paste your viewer URL and the Squarespace PDF URL below.";
+
+        const step3 = document.createElement("p");
+        step3.className = "choice-dialog-message";
+        step3.textContent = "3. Copy the generated iframe code into a Squarespace Code Block.";
+
+        const viewerField = document.createElement("label");
+        viewerField.className = "choice-dialog-field";
+        const viewerLabel = document.createElement("span");
+        viewerLabel.className = "choice-dialog-field-label";
+        viewerLabel.textContent = "Viewer URL";
+        const viewerInput = document.createElement("input");
+        viewerInput.className = "choice-dialog-input";
+        viewerInput.type = "text";
+        viewerInput.value = getShareUrl();
+        viewerInput.placeholder = "https://kiichi.github.io/flip-book-pdf";
+        viewerField.append(viewerLabel, viewerInput);
+
+        const pdfField = document.createElement("label");
+        pdfField.className = "choice-dialog-field";
+        const pdfLabel = document.createElement("span");
+        pdfLabel.className = "choice-dialog-field-label";
+        pdfLabel.textContent = "PDF URL";
+        const pdfInput = document.createElement("textarea");
+        pdfInput.className = "choice-dialog-input";
+        pdfInput.rows = 3;
+        pdfInput.placeholder = "https://example.com/your-file.pdf";
+        pdfField.append(pdfLabel, pdfInput);
+
+        const codeLabel = document.createElement("p");
+        codeLabel.className = "choice-dialog-embed-label";
+        codeLabel.textContent = "Squarespace Iframe Code";
+
+        const codeOutput = document.createElement("textarea");
+        codeOutput.className = "choice-dialog-embed-code";
+        codeOutput.readOnly = true;
+
+        const scriptCodeLabel = document.createElement("p");
+        scriptCodeLabel.className = "choice-dialog-embed-label";
+        scriptCodeLabel.textContent = "Squarespace Script Embed";
+
+        const scriptCodeOutput = document.createElement("textarea");
+        scriptCodeOutput.className = "choice-dialog-embed-code";
+        scriptCodeOutput.readOnly = true;
+
+        const updateCode = () => {
+          codeOutput.value = getSquarespaceEmbedCode(viewerInput.value, pdfInput.value);
+          scriptCodeOutput.value = getSquarespaceScriptEmbedCode(viewerInput.value, pdfInput.value);
+        };
+
+        updateCode();
+        viewerInput.addEventListener("input", updateCode);
+        pdfInput.addEventListener("input", updateCode);
+
+        const copyButton = document.createElement("button");
+        copyButton.type = "button";
+        copyButton.textContent = "Copy Iframe Code";
+        copyButton.addEventListener("click", async () => {
+          const copied = await copyText(codeOutput.value);
+          if (copied) {
+            setPanelFeedback("Squarespace iframe code copied.");
+            return;
+          }
+
+          codeOutput.focus();
+          codeOutput.select();
+          setPanelFeedback("Copy failed. Embed code selected instead.");
+        });
+
+        const copyScriptButton = document.createElement("button");
+        copyScriptButton.type = "button";
+        copyScriptButton.textContent = "Copy Script Embed";
+        copyScriptButton.addEventListener("click", async () => {
+          const copied = await copyText(scriptCodeOutput.value);
+          if (copied) {
+            setPanelFeedback("Squarespace script embed copied.");
+            return;
+          }
+
+          scriptCodeOutput.focus();
+          scriptCodeOutput.select();
+          setPanelFeedback("Copy failed. Script embed selected instead.");
+        });
+
+        const note = document.createElement("p");
+        note.className = "choice-dialog-message";
+        note.textContent =
+          "Tip: the PDF URL must be a direct public .pdf link. Later, you can swap the viewer URL to another host such as jsDelivr if you move the app there.";
+
+        tabPanel.append(
+          step1,
+          step2,
+          step3,
+          viewerField,
+          pdfField,
+          codeLabel,
+          codeOutput,
+          scriptCodeLabel,
+          scriptCodeOutput,
+          copyButton,
+          copyScriptButton,
+          note
+        );
+      };
+
+      const renderGithubPagesTab = (button) => {
+        tabPanel.replaceChildren();
+
+        for (const tabButton of tabRow.querySelectorAll(".choice-dialog-tab")) {
+          tabButton.classList.toggle("is-active", tabButton === button);
+        }
+
+        const steps = [
+          "1. Open your PDF and click Download Entire Package.",
+          "2. Choose Project Folder (Zip), then unzip it on your computer.",
+          "3. Create a GitHub repository and upload the exported files.",
+          "4. In the repository, open Settings, then Pages.",
+          "5. Set the deploy source to the main branch root and save.",
+          "6. Wait for GitHub Pages to publish, then open the site URL and test the flipbook.",
+        ];
+
+        for (const step of steps) {
+          const line = document.createElement("p");
+          line.className = "choice-dialog-message";
+          line.textContent = step;
+          tabPanel.append(line);
+        }
+
+        const note = document.createElement("p");
+        note.className = "choice-dialog-message";
+        note.textContent =
+          "Tip: keep index.html in the published folder root so the flipbook loads correctly.";
+        tabPanel.append(note);
+      };
+
+      const renderNetlifyTab = (button) => {
+        tabPanel.replaceChildren();
+
+        for (const tabButton of tabRow.querySelectorAll(".choice-dialog-tab")) {
+          tabButton.classList.toggle("is-active", tabButton === button);
+        }
+
+        const steps = [
+          "1. Open your PDF and click Download Entire Package.",
+          "2. Choose Project Folder (Zip), then unzip it on your computer.",
+          "3. Go to Netlify and open the Sites page.",
+          "4. Drag the extracted project folder onto Netlify to deploy it.",
+          "5. Wait for deploy to finish, then open the site URL and test the flipbook.",
+        ];
+
+        for (const step of steps) {
+          const line = document.createElement("p");
+          line.className = "choice-dialog-message";
+          line.textContent = step;
+          tabPanel.append(line);
+        }
+
+        const note = document.createElement("p");
+        note.className = "choice-dialog-message";
+        note.textContent =
+          "Tip: drag the extracted folder, not the zip file itself. Netlify is a simple free hosting option for static sites.";
+        tabPanel.append(note);
+      };
+
+      const renderNeocitiesTab = (button) => {
+        tabPanel.replaceChildren();
+
+        for (const tabButton of tabRow.querySelectorAll(".choice-dialog-tab")) {
+          tabButton.classList.toggle("is-active", tabButton === button);
+        }
+
+        const steps = [
+          "1. Open your PDF and click Download Entire Package.",
+          "2. Choose Project Folder (Zip), then unzip it on your computer.",
+          "3. Log in to your Neocities dashboard.",
+          "4. Open the file manager for your site.",
+          "5. Upload the exported files, including index.html, app.js, styles.css, and the PDF.",
+          "6. Open your Neocities site URL and test the flipbook.",
+        ];
+
+        for (const step of steps) {
+          const line = document.createElement("p");
+          line.className = "choice-dialog-message";
+          line.textContent = step;
+          tabPanel.append(line);
+        }
+
+        const note = document.createElement("p");
+        note.className = "choice-dialog-message";
+        note.textContent =
+          "Tip: upload the extracted files, not just the zip. Keep index.html in the site root.";
+        tabPanel.append(note);
+      };
+
+      const renderOwnHostingTab = (button) => {
+        tabPanel.replaceChildren();
+
+        for (const tabButton of tabRow.querySelectorAll(".choice-dialog-tab")) {
+          tabButton.classList.toggle("is-active", tabButton === button);
+        }
+
+        const steps = [
+          "1. Open your PDF and click Download Entire Package.",
+          "2. Choose Project Folder (Zip), then unzip it on your computer.",
+          "3. Upload the exported files to your hosting service or web server.",
+          "4. Make sure index.html, app.js, styles.css, and the PDF are all uploaded together.",
+          "5. Open the hosted page URL and test that the flipbook works.",
+        ];
+
+        for (const step of steps) {
+          const line = document.createElement("p");
+          line.className = "choice-dialog-message";
+          line.textContent = step;
+          tabPanel.append(line);
+        }
+
+        const note = document.createElement("p");
+        note.className = "choice-dialog-message";
+        note.textContent =
+          "Tip: any static hosting service works as long as it serves the exported files publicly over HTTPS.";
+        tabPanel.append(note);
+      };
+
+      const tabs = [
+        { label: "Squarespace", render: renderSquarespaceTab },
+        { label: "GitHub Pages", render: renderGithubPagesTab },
+        { label: "Netlify", render: renderNetlifyTab },
+        { label: "Neocities", render: renderNeocitiesTab },
+        { label: "Your Hosting", render: renderOwnHostingTab },
+      ];
+
+      for (const [index, tab] of tabs.entries()) {
+        const button = document.createElement("button");
+        button.type = "button";
+        button.className = "choice-dialog-tab";
+        button.textContent = tab.label;
+        button.addEventListener("click", () => tab.render(button));
+        tabRow.append(button);
+
+        if (index === 0) {
+          tab.render(button);
+        }
+      }
+
+      choiceDialogContent.append(intro, tabRow, tabPanel);
+    },
+  });
+}
+
 function syncEmbedMode() {
   const isEmbedded = isEmbedMode();
   document.body.classList.toggle("is-embedded", isEmbedded);
@@ -2292,9 +2574,39 @@ function getEmbedCode(embedUrl = getEmbedUrl()) {
   )}" width="960" height="640" style="border:0;" loading="lazy" allow="fullscreen"></iframe>`;
 }
 
+function getSquarespaceEmbedCode(viewerUrl, pdfUrl) {
+  const normalizedViewerUrl = normalizeViewerUrl(viewerUrl);
+  const normalizedPdfUrl = String(pdfUrl || "").trim();
+  const embedUrl = new URL(normalizedViewerUrl || getShareUrl());
+
+  if (normalizedPdfUrl) {
+    embedUrl.searchParams.set("pdf", normalizedPdfUrl);
+  }
+
+  return `<iframe src="${escapeAttribute(
+    embedUrl.toString()
+  )}" width="100%" height="800" style="border:0;" loading="lazy" allow="fullscreen"></iframe>`;
+}
+
+function getSquarespaceScriptEmbedCode(viewerUrl, pdfUrl) {
+  const normalizedViewerUrl = normalizeViewerUrl(viewerUrl);
+  const normalizedPdfUrl = String(pdfUrl || "").trim();
+  const embedScriptUrl = getEmbedScriptUrl(normalizedViewerUrl || getShareUrl());
+  embedScriptUrl.search = "";
+  embedScriptUrl.hash = "";
+
+  return `<div data-flippy-embed data-pdf="${escapeAttribute(
+    normalizedPdfUrl
+  )}" data-height="800"></div>
+<script src="${escapeAttribute(embedScriptUrl.toString())}" data-viewer="${escapeAttribute(
+    normalizedViewerUrl
+  )}"><\/script>`;
+}
+
 function getShareUrl() {
   const url = new URL(window.location.href);
   url.searchParams.delete("embed");
+  url.searchParams.delete("pdf");
   return url.toString();
 }
 
@@ -2307,6 +2619,33 @@ function getEmbedUrl() {
 function isEmbedMode() {
   const url = new URL(window.location.href);
   return window.self !== window.top || url.searchParams.get("embed") === "1";
+}
+
+function getPdfPath() {
+  const url = new URL(window.location.href);
+  const pdfParam = url.searchParams.get("pdf");
+  return pdfParam ? pdfParam.trim() : "./sample.pdf";
+}
+
+function normalizeViewerUrl(value) {
+  const normalized = String(value || "").trim();
+  return normalized || getShareUrl();
+}
+
+function getEmbedScriptUrl(viewerUrl) {
+  const url = new URL(viewerUrl, window.location.href);
+
+  if (url.pathname.endsWith("/index.html")) {
+    url.pathname = url.pathname.replace(/\/index\.html$/, "/embed.js");
+    return url;
+  }
+
+  if (!url.pathname.endsWith("/")) {
+    url.pathname = `${url.pathname}/`;
+  }
+
+  url.pathname = `${url.pathname}embed.js`;
+  return url;
 }
 
 function setPanelFeedback(message) {
