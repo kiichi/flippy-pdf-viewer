@@ -747,7 +747,7 @@ select {
 
 .choice-dialog-card {
   position: relative;
-  width: min(100%, 720px);
+  width: min(100%, 480px);
   max-width: 100%;
   display: flex;
   flex-direction: column;
